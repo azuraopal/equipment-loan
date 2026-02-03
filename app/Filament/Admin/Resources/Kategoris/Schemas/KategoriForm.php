@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Kategoris\Schemas;
+namespace App\Filament\Admin\Resources\Kategoris\Schemas;
 
 use Filament\Schemas\Schema;
 

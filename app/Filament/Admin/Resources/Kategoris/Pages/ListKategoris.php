@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Kategoris\Pages;
+namespace App\Filament\Admin\Resources\Kategoris\Pages;
 
 use App\Filament\Resources\Kategoris\KategoriResource;
 use Filament\Actions\CreateAction;

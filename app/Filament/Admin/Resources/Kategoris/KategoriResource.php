@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Filament\Resources\Kategoris;
+namespace App\Filament\Admin\Resources\Kategoris;
 
-use App\Filament\Resources\Kategoris\Pages\CreateKategori;
-use App\Filament\Resources\Kategoris\Pages\EditKategori;
-use App\Filament\Resources\Kategoris\Pages\ListKategoris;
-use App\Filament\Resources\Kategoris\Schemas\KategoriForm;
-use App\Filament\Resources\Kategoris\Tables\KategorisTable;
+use App\Filament\Admin\Resources\Kategoris\Pages\CreateKategori;
+use App\Filament\Admin\Resources\Kategoris\Pages\EditKategori;
+use App\Filament\Admin\Resources\Kategoris\Pages\ListKategoris;
+use App\Filament\Admin\Resources\Kategoris\Schemas\KategoriForm;
+use App\Filament\Admin\Resources\Kategoris\Tables\KategorisTable;
 use App\Models\Kategori;
 use BackedEnum;
 use Filament\Resources\Resource;

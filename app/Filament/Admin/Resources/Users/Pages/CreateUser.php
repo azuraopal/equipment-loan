@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Users\Pages;
+namespace App\Filament\Admin\Resources\Users\Pages;
 
 use App\Filament\Resources\Users\UserResource;
 use Filament\Resources\Pages\CreateRecord;
