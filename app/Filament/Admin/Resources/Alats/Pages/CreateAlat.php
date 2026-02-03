@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Alats\Pages;
+namespace App\Filament\Admin\Resources\Alats\Pages;
 
 use App\Filament\Resources\Alats\AlatResource;
 use Filament\Resources\Pages\CreateRecord;

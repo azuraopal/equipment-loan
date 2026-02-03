@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Filament\Resources\Alats;
+namespace App\Filament\Admin\Resources\Alats;
 
-use App\Filament\Resources\Alats\Pages\CreateAlat;
-use App\Filament\Resources\Alats\Pages\EditAlat;
-use App\Filament\Resources\Alats\Pages\ListAlats;
-use App\Filament\Resources\Alats\Schemas\AlatForm;
-use App\Filament\Resources\Alats\Tables\AlatsTable;
+use App\Filament\Admin\Resources\Alats\Pages\CreateAlat;
+use App\Filament\Admin\Resources\Alats\Pages\EditAlat;
+use App\Filament\Admin\Resources\Alats\Pages\ListAlats;
+use App\Filament\Admin\Resources\Alats\Schemas\AlatForm;
+use App\Filament\Admin\Resources\Alats\Tables\AlatsTable;
 use App\Models\Alat;
 use BackedEnum;
 use Filament\Resources\Resource;
