@@ -6,7 +6,7 @@ use App\Filament\Resources\Kategoris\KategoriResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
-class ListKategoris extends ListRecords
+class ListKategori extends ListRecords
 {
     protected static string $resource = KategoriResource::class;
 

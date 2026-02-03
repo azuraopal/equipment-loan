@@ -4,46 +4,57 @@ namespace App\Filament\Admin\Resources\Kategoris;
 
 use App\Filament\Admin\Resources\Kategoris\Pages\CreateKategori;
 use App\Filament\Admin\Resources\Kategoris\Pages\EditKategori;
-use App\Filament\Admin\Resources\Kategoris\Pages\ListKategoris;
-use App\Filament\Admin\Resources\Kategoris\Schemas\KategoriForm;
-use App\Filament\Admin\Resources\Kategoris\Tables\KategorisTable;
+use App\Filament\Admin\Resources\Kategoris\Pages\ListKategori;
 use App\Models\Kategori;
-use BackedEnum;
-use Filament\Resources\Resource;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
+use Filament\Resources\Resource;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use BackedEnum;
 
 class KategoriResource extends Resource
 {
     protected static ?string $model = Kategori::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
-    protected static ?string $recordTitleAttribute = 'Kategori';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-tag';
+    protected static ?string $navigationGroup = 'Master Data';
 
     public static function form(Schema $schema): Schema
     {
-        return KategoriForm::configure($schema);
+        return $schema
+            ->components([
+                TextInput::make('nama_kategori')
+                    ->required()
+                    ->maxLength(255),
+                Textarea::make('deskripsi')
+                    ->columnSpanFull(),
+            ]);
     }
 
     public static function table(Table $table): Table
     {
-        return KategorisTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
+        return $table
+            ->columns([
+                TextColumn::make('nama_kategori')->searchable(),
+                TextColumn::make('alats_count')
+                    ->counts('alats')
+                    ->label('Jumlah Alat'),
+            ])
+            ->actions([
+                EditAction::make(),
+                DeleteAction::make(),
+            ]);
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListKategoris::route('/'),
-            'create' => CreateKategori::route('/create'),
+            'index' => ListKategori::route('/'),
+            'create' => CreateKategori::route('/path: create'),
             'edit' => EditKategori::route('/{record}/edit'),
         ];
     }

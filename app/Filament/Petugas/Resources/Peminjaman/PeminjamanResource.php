@@ -6,14 +6,18 @@ use App\Filament\Petugas\Resources\Peminjaman\Pages\ListPeminjaman;
 use App\Models\Peminjaman;
 use App\Enums\PeminjamanStatus;
 use App\Models\Pengembalian;
+use App\Models\PengembalianDetail;
 use Exception;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Filament\Actions\Action; 
 use Illuminate\Support\Facades\DB;
 use Filament\Notifications\Notification;
 use BackedEnum;
@@ -21,8 +25,9 @@ use BackedEnum;
 class PeminjamanResource extends Resource
 {
     protected static ?string $model = Peminjaman::class;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-check-badge';
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-check-badge';
+    protected static ?string $navigationLabel = 'Verifikasi Peminjaman';
 
     public static function canCreate(): bool
     {
@@ -39,12 +44,13 @@ class PeminjamanResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('nomor_peminjaman')->searchable(),
-                TextColumn::make('user.name')->label('Peminjam'),
+                TextColumn::make('user.name')->label('Peminjam')->searchable(),
                 TextColumn::make('tanggal_pinjam')->date(),
                 TextColumn::make('status')->badge(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->actions([
-                Action::make('approve')
+                Actions::make('approve')
                     ->label('Setujui')
                     ->color('success')
                     ->icon('heroicon-o-check')
@@ -55,59 +61,130 @@ class PeminjamanResource extends Resource
                             foreach ($record->peminjamanDetails as $detail) {
                                 $alat = $detail->alat;
                                 if ($alat->stok < $detail->jumlah) {
-                                    Notification::make()->title("Stok {$alat->nama_alat} Kurang!")->danger()->send();
+                                    Notification::make()
+                                        ->title("Gagal: Stok {$alat->nama_alat} tidak cukup!")
+                                        ->danger()
+                                        ->send();
                                     throw new Exception('Stok Habis');
                                 }
                                 $alat->decrement('stok', $detail->jumlah);
                             }
-                            $record->update(['status' => PeminjamanStatus::Disetujui]);
+                            $record->update([
+                                'status' => PeminjamanStatus::Disetujui,
+                                'approved_by' => auth()->id(),
+                                'approved_at' => now(),
+                            ]);
                         });
-                        Notification::make()->title('Berhasil Disetujui')->success()->send();
+                        Notification::make()->title('Peminjaman Disetujui')->success()->send();
                     }),
 
-                Action::make('reject')
+                Actions::make('reject')
                     ->label('Tolak')
                     ->color('danger')
                     ->visible(fn(Peminjaman $r) => $r->status === PeminjamanStatus::Menunggu)
-                    ->action(fn(Peminjaman $r) => $r->update(['status' => PeminjamanStatus::Ditolak])),
+                    ->action(function (Peminjaman $r) {
+                        $r->update([
+                            'status' => PeminjamanStatus::Ditolak,
+                            'rejected_by' => auth()->id(),
+                            'rejected_at' => now(),
+                        ]);
+                    }),
 
-                Action::make('return')
-                    ->label('Proses Kembali')
+                Actions::make('return')
+                    ->label('Terima Barang')
                     ->color('info')
                     ->icon('heroicon-o-arrow-path')
                     ->visible(fn(Peminjaman $r) => $r->status === PeminjamanStatus::Disetujui)
+                    ->modalHeading('Verifikasi Pengembalian Barang')
+                    ->modalDescription('Cek kondisi fisik barang. Isi denda jika ada kerusakan/kehilangan.')
                     ->form(fn(Schema $schema) => $schema->components([
+
                         DatePicker::make('tanggal_kembali_real')
+                            ->label('Tanggal Dikembalikan')
                             ->default(now())
                             ->required(),
-                        TextInput::make('denda')
-                            ->label('Total Denda (Terlambat/Rusak)')
-                            ->numeric()
-                            ->prefix('Rp')
-                            ->default(0),
+
+                        Textarea::make('info_barang')
+                            ->label('Barang yang harus kembali')
+                            ->default(
+                                fn(Peminjaman $record) =>
+                                $record->peminjamanDetails->map(fn($d) => "• {$d->alat->nama_alat} ({$d->jumlah} unit)")->join("\n")
+                            )
+                            ->disabled()
+                            ->rows(3),
+
+                        Grid::make(2)->schema([
+                            TextInput::make('denda_keterlambatan')
+                                ->label('Denda Telat')
+                                ->prefix('Rp')
+                                ->numeric()
+                                ->default(0),
+
+                            TextInput::make('denda_kerusakan')
+                                ->label('Denda Rusak/Hilang')
+                                ->prefix('Rp')
+                                ->numeric()
+                                ->default(0)
+                                ->live(),
+                        ]),
+
+                        Textarea::make('catatan_kondisi')
+                            ->label('Keterangan Kerusakan/Kehilangan')
+                            ->placeholder('Contoh: Mata bor patah, Kabel putus.')
+                            ->visible(fn(Get $get) => (int) $get('denda_kerusakan') > 0)
+                            ->required(fn(Get $get) => (int) $get('denda_kerusakan') > 0),
                     ]))
                     ->action(function (Peminjaman $record, array $data) {
                         DB::transaction(function () use ($record, $data) {
+
+                            $totalDenda = $data['denda_keterlambatan'] + $data['denda_kerusakan'];
+                            $statusBayar = $totalDenda > 0 ? 'Belum_Lunas' : 'Lunas';
+
                             foreach ($record->peminjamanDetails as $detail) {
                                 $detail->alat->increment('stok', $detail->jumlah);
                             }
 
-                            Pengembalian::create([
+                            $pengembalian = Pengembalian::create([
                                 'peminjaman_id' => $record->id,
                                 'petugas_id' => auth()->id(),
+                                'nomor_pengembalian' => 'RET-' . time(),
                                 'tanggal_kembali_real' => $data['tanggal_kembali_real'],
-                                'denda' => $data['denda'],
+                                'denda_keterlambatan' => $data['denda_keterlambatan'],
+                                'denda_kerusakan' => $data['denda_kerusakan'],
+                                'total_denda' => $totalDenda,
+                                'status_pembayaran' => $statusBayar,
+                                'catatan_pengembalian' => $data['catatan_kondisi'] ?? null,
                             ]);
 
-                            $record->update(['status' => PeminjamanStatus::Kembali]);
+                            foreach ($record->peminjamanDetails as $detail) {
+                                PengembalianDetail::create([
+                                    'pengembalian_id' => $pengembalian->id,
+                                    'alat_id' => $detail->alat_id,
+                                    'jumlah_kembali' => $detail->jumlah,
+                                    'kondisi_kembali' => 'Baik',
+                                    'denda_item' => 0,
+                                ]);
+                            }
+
+                            $record->update([
+                                'status' => PeminjamanStatus::Kembali,
+                                'tanggal_kembali_real' => $data['tanggal_kembali_real'],
+                            ]);
                         });
-                        Notification::make()->title('Pengembalian Selesai')->success()->send();
+
+                        Notification::make()
+                            ->title('Barang Diterima & Stok Kembali')
+                            ->body($data['denda_kerusakan'] > 0 ? 'Denda kerusakan tercatat.' : 'Pengembalian sukses.')
+                            ->success()
+                            ->send();
                     }),
             ]);
     }
 
     public static function getPages(): array
     {
-        return ['index' => ListPeminjaman::route('/')];
+        return [
+            'index' => ListPeminjaman::route('/'),
+        ];
     }
 }
