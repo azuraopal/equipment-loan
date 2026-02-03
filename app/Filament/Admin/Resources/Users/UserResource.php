@@ -7,6 +7,7 @@ use App\Filament\Admin\Resources\Users\Pages\ListUsers;
 use App\Models\User;
 use App\Enums\UserRole;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Forms;
@@ -30,7 +31,7 @@ class UserResource extends Resource
                     ->password()
                     ->dehydrated(fn ($state) => filled($state))
                     ->required(fn (string $context) => $context === 'create'),
-                Forms\Components\Select::make('role')
+                Select::make('role')
                     ->options(UserRole::class)
                     ->required(),
             ]);

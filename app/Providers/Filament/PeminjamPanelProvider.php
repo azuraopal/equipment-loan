@@ -29,12 +29,24 @@ class PeminjamPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
-            ->discoverResources(in: app_path('Filament/Peminjam/Resources'), for: 'App\Filament\Peminjam\Resources')
-            ->discoverPages(in: app_path('Filament/Peminjam/Pages'), for: 'App\Filament\Peminjam\Pages')
+
+            ->discoverResources(
+                in: app_path('Filament/Peminjam/Resources/Peminjaman'),
+                for: 'App\Filament\Peminjam\Resources/Peminjaman'
+            )
+
+            ->discoverPages(
+                in: app_path('Filament/Peminjam/Pages'),
+                for: 'App\Filament\Peminjam\Pages'
+            )
             ->pages([
                 Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Peminjam/Widgets'), for: 'App\Filament\Peminjam\Widgets')
+
+            ->discoverWidgets(
+                in: app_path('Filament/Peminjam/Widgets'),
+                for: 'App\Filament\Peminjam\Widgets'
+            )
             ->widgets([
                 AccountWidget::class,
                 FilamentInfoWidget::class,

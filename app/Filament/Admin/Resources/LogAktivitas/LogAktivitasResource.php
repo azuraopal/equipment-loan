@@ -6,8 +6,6 @@ use App\Filament\Admin\Resources\LogAktivitas\Pages\ManageLogAktivitas;
 use App\Models\LogAktivitas;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
-use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
