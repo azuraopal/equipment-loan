@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\JenisAktivitas;
 use Illuminate\Database\Eloquent\Model;
 
 class LogAktivitas extends Model
