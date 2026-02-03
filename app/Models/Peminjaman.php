@@ -10,6 +10,8 @@ class Peminjaman extends Model
 {
     use MencatatAktivitas;
 
+    protected $table = 'peminjamans';
+
     protected $guarded = [];
 
     protected $casts = [
