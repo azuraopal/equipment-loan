@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Admin\Resources\Kategoris;
+namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\Kategoris\Pages\CreateKategori;
 use App\Filament\Admin\Resources\Kategoris\Pages\EditKategori;

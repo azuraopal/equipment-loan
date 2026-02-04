@@ -1,18 +1,16 @@
 <?php
-namespace App\Filament\Admin\Resources\Users;
+namespace App\Filament\Admin\Resources;
 
-use App\Filament\Admin\Resources\Users\Pages\CreateUser;
-use App\Filament\Admin\Resources\Users\Pages\EditUser;
-use App\Filament\Admin\Resources\Users\Pages\ListUsers;
+use App\Filament\Admin\Resources\UsersResource\Pages\CreateUser;
+use App\Filament\Admin\Resources\UsersResource\Pages\EditUser;
+use App\Filament\Admin\Resources\UsersResource\Pages\ListUsers;
 use App\Models\User;
 use App\Enums\UserRole;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
-use Filament\Forms;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
