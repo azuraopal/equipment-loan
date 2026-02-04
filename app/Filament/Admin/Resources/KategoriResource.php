@@ -6,8 +6,6 @@ use App\Filament\Admin\Resources\Kategoris\Pages\CreateKategori;
 use App\Filament\Admin\Resources\Kategoris\Pages\EditKategori;
 use App\Filament\Admin\Resources\Kategoris\Pages\ListKategori;
 use App\Models\Kategori;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -15,13 +13,15 @@ use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use BackedEnum;
+use UnitEnum;
 
 class KategoriResource extends Resource
 {
     protected static ?string $model = Kategori::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-tag';
-    protected static ?string $navigationGroup = 'Master Data';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Master Data';
 
     public static function form(Schema $schema): Schema
     {
@@ -45,8 +45,8 @@ class KategoriResource extends Resource
                     ->label('Jumlah Alat'),
             ])
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\EditAction::make(),
             ]);
     }
 
@@ -54,7 +54,7 @@ class KategoriResource extends Resource
     {
         return [
             'index' => ListKategori::route('/'),
-            'create' => CreateKategori::route('/path: create'),
+            'create' => CreateKategori::route('/create'),
             'edit' => EditKategori::route('/{record}/edit'),
         ];
     }

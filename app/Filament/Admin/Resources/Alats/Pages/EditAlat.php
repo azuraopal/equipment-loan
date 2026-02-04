@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Alats\Pages;
 
-use App\Filament\Resources\Alats\AlatResource;
+use App\Filament\Admin\Resources\AlatResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 

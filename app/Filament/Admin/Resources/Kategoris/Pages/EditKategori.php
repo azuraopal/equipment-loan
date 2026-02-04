@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Kategoris\Pages;
 
-use App\Filament\Resources\Kategoris\KategoriResource;
+use App\Filament\Admin\Resources\KategoriResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 

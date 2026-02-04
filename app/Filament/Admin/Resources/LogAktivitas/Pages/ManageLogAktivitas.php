@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Resources\LogAktivitas\Pages;
 
-use App\Filament\Resources\LogAktivitas\LogAktivitasResource;
+use App\Filament\Admin\Resources\LogAktivitasResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ManageRecords;
 

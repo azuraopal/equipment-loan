@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Kategoris\Pages;
 
-use App\Filament\Resources\Kategoris\KategoriResource;
+use App\Filament\Admin\Resources\KategoriResource;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateKategori extends CreateRecord

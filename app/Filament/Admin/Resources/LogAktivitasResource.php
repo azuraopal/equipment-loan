@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Filament\Admin\Resources\LogAktivitas;
+namespace App\Filament\Admin\Resources; 
 
 use App\Filament\Admin\Resources\LogAktivitas\Pages\ManageLogAktivitas;
+
 use App\Models\LogAktivitas;
-use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -12,15 +12,19 @@ use Filament\Tables\Table;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\KeyValueEntry;
 use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
+use BackedEnum;
 
 class LogAktivitasResource extends Resource
 {
     protected static ?string $model = LogAktivitas::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
+
     protected static ?string $navigationLabel = 'Log Aktivitas';
     protected static ?string $pluralModelLabel = 'Log Aktivitas';
-    protected static ?string $navigationGroup = 'Sistem';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Sistem';
 
     public static function canCreate(): bool
     {
@@ -70,7 +74,7 @@ class LogAktivitasResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                SelectFilter::make('jenis_aktivname: itas')
+                SelectFilter::make('jenis_aktivitas')
                     ->options([
                         'INSERT' => 'Insert',
                         'UPDATE' => 'Update',
@@ -82,9 +86,9 @@ class LogAktivitasResource extends Resource
                     ]),
             ])
             ->actions([
-                ViewAction::make()
+                \Filament\Actions\ViewAction::make()
                     ->modalHeading('Detail Log Aktivitas')
-                    ->schema([
+                    ->infolist([
                         TextEntry::make('jenis_aktivitas')->label('Aksi'),
                         TextEntry::make('model')->label('Modul'),
                         TextEntry::make('deskripsi')->label('Deskripsi'),
