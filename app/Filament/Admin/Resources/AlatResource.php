@@ -26,10 +26,13 @@ class AlatResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema
-            ->components([ 
+            ->components([
                 Select::make('kategori_id')
-                    ->label('Kategori')
-                    ->options(Kategori::all()->pluck('nama_kategori', 'id'))
+                    ->relationship('kategori', 'nama_kategori')
+                    ->searchable()
+                    ->preload()
+                    ->badge()
+                    ->color('info')
                     ->required(),
                 TextInput::make('nama_alat')
                     ->required()

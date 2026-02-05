@@ -11,4 +11,9 @@ class Alat extends Model
     {
         return $this->stok >= $requested;
     }
+
+    public function kategori()
+    {
+        return $this->belongsTo(Kategori::class, 'kategori_id');
+    }
 }
