@@ -31,15 +31,15 @@ class AlatResource extends Resource
                     ->relationship('kategori', 'nama_kategori')
                     ->searchable()
                     ->preload()
-                    ->badge()
-                    ->color('info')
                     ->required(),
                 TextInput::make('nama_alat')
                     ->required()
                     ->maxLength(255),
                 TextInput::make('kode_alat')
-                    ->required()
-                    ->unique(ignoreRecord: true),
+                    ->placeholder('Otomatis oleh sistem')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->visibleOn('edit'),
                 TextInput::make('stok')
                     ->numeric()
                     ->default(0)
@@ -53,6 +53,9 @@ class AlatResource extends Resource
                         'Rusak' => 'Rusak',
                         'Hilang' => 'Hilang',
                     ])
+                    ->native(false)
+                    ->searchable()
+                    ->preload()
                     ->default('Baik'),
             ]);
     }
