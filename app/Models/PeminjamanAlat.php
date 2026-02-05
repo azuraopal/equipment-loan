@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\MencatatAktivitas;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PeminjamanAlat extends Model
 {
+    use MencatatAktivitas;
     protected $guarded = [];
     protected $table = 'peminjaman_alats';
 

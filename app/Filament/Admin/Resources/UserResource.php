@@ -33,6 +33,9 @@ class UserResource extends Resource
                     ->required(fn(string $context) => $context === 'create'),
                 Select::make('role')
                     ->options(UserRole::class)
+                    ->native(false)
+                    ->searchable()
+                    ->preload()
                     ->required(),
             ]);
     }

@@ -1,11 +1,13 @@
 <?php
 namespace App\Models;
 
+use App\Traits\MencatatAktivitas;
 use Illuminate\Database\Eloquent\Model;
 use Str;
 
 class Alat extends Model
 {
+    use MencatatAktivitas;
     protected $guarded = [];
 
     protected $fillable = [

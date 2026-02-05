@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class LogAktivitas extends Model
 {
     protected $table = 'log_aktivitas';
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'jenis_aktivitas' => JenisAktivitas::class,

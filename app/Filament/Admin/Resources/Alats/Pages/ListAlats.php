@@ -10,6 +10,11 @@ class ListAlats extends ListRecords
 {
     protected static string $resource = AlatResource::class;
 
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+
     protected function getHeaderActions(): array
     {
         return [
