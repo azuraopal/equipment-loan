@@ -7,6 +7,7 @@ use App\Filament\Peminjam\Resources\Peminjaman\Pages\ListPeminjaman;
 use App\Models\Peminjaman;
 use App\Models\Alat;
 use App\Enums\PeminjamanStatus;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -77,7 +78,7 @@ class PeminjamanResource extends Resource
                 TextColumn::make('status')->badge(),
             ])
             ->actions([
-                Actions::make('kembalikan')
+                Action::make('kembalikan')
                     ->label('Kembalikan Alat')
                     ->color('info')
                     ->icon('heroicon-o-arrow-left-start-on-rectangle')

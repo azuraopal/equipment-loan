@@ -8,6 +8,7 @@ use App\Enums\PeminjamanStatus;
 use App\Models\Pengembalian;
 use App\Models\PengembalianDetail;
 use Exception;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -50,7 +51,7 @@ class PeminjamanResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
-                Actions::make('approve')
+                Action::make('approve')
                     ->label('Setujui')
                     ->color('success')
                     ->icon('heroicon-o-check')
@@ -78,7 +79,7 @@ class PeminjamanResource extends Resource
                         Notification::make()->title('Peminjaman Disetujui')->success()->send();
                     }),
 
-                Actions::make('reject')
+                Action::make('reject')
                     ->label('Tolak')
                     ->color('danger')
                     ->visible(fn(Peminjaman $r) => $r->status === PeminjamanStatus::Menunggu)
@@ -90,7 +91,7 @@ class PeminjamanResource extends Resource
                         ]);
                     }),
 
-                Actions::make('return')
+                Action::make('return')
                     ->label('Terima Barang')
                     ->color('info')
                     ->icon('heroicon-o-arrow-path')
