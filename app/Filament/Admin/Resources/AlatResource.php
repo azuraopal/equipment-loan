@@ -9,10 +9,13 @@ use App\Models\Alat;
 use App\Models\Kategori;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Support\RawJs;
 use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use BackedEnum;
@@ -29,14 +32,24 @@ class AlatResource extends Resource
     {
         return $schema
             ->components([
+                FileUpload::make('gambar')
+                    ->directory('')
+                    ->visibility('private')
+                    ->image()
+                    ->imagePreviewHeight('300')
+                    ->columnSpanFull()
+                    ->required(),
+                TextInput::make('nama_alat')
+                    ->required()
+                    ->maxLength(255)
+                    ->columnSpan(2),
+
                 Select::make('kategori_id')
                     ->relationship('kategori', 'nama_kategori')
                     ->searchable()
                     ->preload()
                     ->required(),
-                TextInput::make('nama_alat')
-                    ->required()
-                    ->maxLength(255),
+
                 TextInput::make('kode_alat')
                     ->placeholder('Otomatis oleh sistem')
                     ->disabled()
@@ -48,6 +61,9 @@ class AlatResource extends Resource
                     ->required(),
                 TextInput::make('harga_satuan')
                     ->numeric()
+                    ->mask(RawJs::make('$money($input, \',\', \'.\')'))
+                    ->stripCharacters('.')
+                    ->numeric()
                     ->prefix('Rp'),
                 Select::make('kondisi_awal')
                     ->options([
@@ -58,15 +74,12 @@ class AlatResource extends Resource
                     ->native(false)
                     ->searchable()
                     ->preload()
-                    ->default('Baik'),
-                TextInput::make('spesifikasi')
-                    ->maxLength('100'),
-                FileUpload::make('gambar')
-                    ->directory('')
-                    ->visibility('private')
-                    ->image()
-                    ->imagePreviewHeight('300')
-                    ->columnSpanFull(),
+                    ->default('Baik')
+                    ->required(),
+                Textarea::make('spesifikasi')
+                    ->maxLength('500')
+                    ->columnSpan(2),
+
             ]);
     }
 
