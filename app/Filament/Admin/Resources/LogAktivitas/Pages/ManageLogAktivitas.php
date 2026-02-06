@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\LogAktivitas\Pages;
 
 use App\Filament\Admin\Resources\LogAktivitasResource;
-use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ManageRecords;
 
 class ManageLogAktivitas extends ManageRecords
