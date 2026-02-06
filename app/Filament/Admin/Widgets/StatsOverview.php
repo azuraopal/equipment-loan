@@ -26,7 +26,7 @@ class StatsOverview extends BaseWidget
             Stat::make('Total Alat', Alat::count())
                 ->description('Aset tersedia')
                 ->color('primary')
-                ->icon('heroicon-o-wrench-screwdriver'),
+                ->icon('heroicon-o-rectangle-stack'),
 
             Stat::make('Total Kategori', Kategori::count())
                 ->description('Jenis Kategori')
