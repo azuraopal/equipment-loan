@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Responses\LoginResponse;
+use Filament\Auth\Http\Responses\Contracts\LoginResponse as LoginResponseContract;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -21,32 +23,31 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class PeminjamPanelProvider extends PanelProvider
 {
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->singleton(
+            LoginResponseContract::class,
+            LoginResponse::class
+        );
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel
             ->id('peminjam')
             ->path('peminjam')
+            ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Green,
             ])
-
-            ->discoverResources(
-                in: app_path('Filament/Peminjam/Resources/Peminjaman'),
-                for: 'App\Filament\Peminjam\Resources/Peminjaman'
-            )
-
-            ->discoverPages(
-                in: app_path('Filament/Peminjam/Pages'),
-                for: 'App\Filament\Peminjam\Pages'
-            )
+            ->discoverResources(in: app_path('Filament/Peminjam/Resources'), for: 'App\Filament\Peminjam\Resources')
+            ->discoverPages(in: app_path('Filament/Peminjam/Pages'), for: 'App\Filament\Peminjam\Pages')
             ->pages([
                 Dashboard::class,
             ])
-
-            ->discoverWidgets(
-                in: app_path('Filament/Peminjam/Widgets'),
-                for: 'App\Filament\Peminjam\Widgets'
-            )
+            ->discoverWidgets(in: app_path('Filament/Peminjam/Widgets'), for: 'App\Filament\Peminjam\Widgets')
             ->widgets([
                 AccountWidget::class,
                 FilamentInfoWidget::class,
