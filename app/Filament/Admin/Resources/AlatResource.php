@@ -7,10 +7,12 @@ use App\Filament\Admin\Resources\Alats\Pages\EditAlat;
 use App\Filament\Admin\Resources\Alats\Pages\ListAlats;
 use App\Models\Alat;
 use App\Models\Kategori;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use BackedEnum;
@@ -57,6 +59,14 @@ class AlatResource extends Resource
                     ->searchable()
                     ->preload()
                     ->default('Baik'),
+                TextInput::make('spesifikasi')
+                    ->maxLength('100'),
+                FileUpload::make('gambar')
+                    ->directory('')
+                    ->visibility('private')
+                    ->image()
+                    ->imagePreviewHeight('300')
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -64,11 +74,13 @@ class AlatResource extends Resource
     {
         return $table
             ->columns([
+                ImageColumn::make('gambar'),
                 TextColumn::make('nama_alat')->searchable(),
                 TextColumn::make('kode_alat')->searchable(),
                 TextColumn::make('kategori.nama_kategori')->badge(),
                 TextColumn::make('stok')->label('Stok'),
                 TextColumn::make('kondisi_awal')->badge(),
+                TextColumn::make('spesifikasi'),
             ])
             ->actions([
                 \Filament\Actions\EditAction::make(),

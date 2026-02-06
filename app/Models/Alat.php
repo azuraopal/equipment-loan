@@ -16,7 +16,9 @@ class Alat extends Model
         'nama_alat',
         'stok',
         'harga_satuan',
-        'kondisi_awal'
+        'kondisi_awal',
+        'spesifikasi',
+        'gambar'
     ];
 
     protected static function booted()
