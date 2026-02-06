@@ -30,13 +30,6 @@ class AlatResource extends Resource
     {
         return $schema
             ->components([
-                FileUpload::make('gambar')
-                    ->directory('')
-                    ->visibility('private')
-                    ->image()
-                    ->imagePreviewHeight('300')
-                    ->columnSpanFull()
-                    ->required(),
                 TextInput::make('nama_alat')
                     ->required()
                     ->maxLength(255)
@@ -75,7 +68,13 @@ class AlatResource extends Resource
                 Textarea::make('spesifikasi')
                     ->maxLength('500')
                     ->columnSpan(2),
-
+                FileUpload::make('gambar')
+                    ->directory('')
+                    ->visibility('private')
+                    ->image()
+                    ->imagePreviewHeight('300')
+                    ->columnSpanFull()
+                    ->required(),
             ]);
     }
 
