@@ -26,10 +26,10 @@ class LogAktivitasResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Sistem';
 
-    public static function canCreate(): bool
-    {
-        return false;
-    }
+    // public static function canCreate(): bool
+    // {
+    //     return false;
+    // }
 
     public static function canEdit(Model $record): bool
     {
