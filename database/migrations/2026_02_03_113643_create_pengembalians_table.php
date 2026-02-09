@@ -24,6 +24,7 @@ return new class extends Migration {
             $table->string('status_pembayaran')->default('Belum_Lunas');
             $table->date('tanggal_bayar')->nullable();
             $table->string('bukti_bayar')->nullable();
+            $table->text('catatan_pengembalian')->nullable();
             $table->foreignId('verified_by')->nullable()->constrained('users');
             $table->timestamps();
         });

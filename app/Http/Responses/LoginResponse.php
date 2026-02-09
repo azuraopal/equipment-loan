@@ -7,9 +7,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Features\SupportRedirects\Redirector;
 
-use Filament\Auth\Http\Responses\Contracts\LoginResponse as LoginResponseContract;
+use Filament\Auth\Http\Responses\LoginResponse as BaseLoginResponse;
 
-class LoginResponse implements LoginResponseContract
+class LoginResponse extends BaseLoginResponse
 {
     public function toResponse($request): RedirectResponse|Redirector
     {
@@ -29,6 +29,6 @@ class LoginResponse implements LoginResponseContract
             }
         }
 
-        return redirect()->to('/login');
+        return parent::toResponse($request);
     }
 }

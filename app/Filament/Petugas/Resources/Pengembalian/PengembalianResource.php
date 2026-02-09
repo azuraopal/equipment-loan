@@ -4,10 +4,12 @@ namespace App\Filament\Petugas\Resources\Pengembalian;
 
 use App\Filament\Petugas\Resources\Pengembalian\Pages\EditPengembalian;
 use App\Filament\Petugas\Resources\Pengembalian\Pages\ListPengembalian;
+use App\Models\Alat;
 use App\Models\Pengembalian;
 use Auth;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -35,7 +37,7 @@ class PengembalianResource extends Resource
     }
     public static function canEdit($record): bool
     {
-        return false;
+        return true;
     }
     public static function canDelete($record): bool
     {
@@ -57,46 +59,65 @@ class PengembalianResource extends Resource
 
                         DatePicker::make('tanggal_kembali_real')
                             ->label('Tanggal Terima Fisik')
-                            ->required(),
+                            ->required()
+                            ->default(now()),
                     ])->columns(2),
 
                 Section::make('Cek Kondisi Barang')
-                    ->description('Sesuaikan kondisi barang dengan fisik yang diterima.')
+                    ->description('Sistem akan menghitung denda otomatis berdasarkan kondisi (Hilang=100%, Rusak=50%).')
                     ->schema([
                         Repeater::make('details')
                             ->relationship()
+                            ->live()
                             ->schema([
                                 Select::make('alat_id')
                                     ->relationship('alat', 'nama_alat')
                                     ->required()
-                                    ->searchable(),
+                                    ->searchable()
+                                    ->preload()
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, Set $set, Get $get) {
+                                        $alat = Alat::find($state);
+                                        $harga = $alat ? $alat->harga_satuan : 0;
+
+                                        $set('harga_temp', $harga);
+
+                                        self::hitungDendaPerItem($set, $get);
+                                    }),
+
+                                Hidden::make('harga_temp')
+                                    ->default(0)
+                                    ->dehydrated(false),
+
                                 TextInput::make('jumlah_kembali')
                                     ->numeric()
                                     ->required()
-                                    ->default(1),
+                                    ->default(1)
+                                    ->minValue(1)
+                                    ->reactive()
+                                    ->afterStateUpdated(fn(Set $set, Get $get) => self::hitungDendaPerItem($set, $get)),
+
                                 Select::make('kondisi_kembali')
                                     ->options([
-                                        'Baik' => 'Baik',
-                                        'Rusak' => 'Rusak',
-                                        'Hilang' => 'Hilang',
+                                        'Baik' => 'Baik (Denda 0)',
+                                        'Rusak' => 'Rusak (Denda 50%)',
+                                        'Hilang' => 'Hilang (Denda 100%)',
                                     ])
                                     ->required()
                                     ->reactive()
-                                    ->afterStateUpdated(function (Get $get, Set $set, $state) {
-                                        if ($state === 'Baik') {
-                                            $set('denda_item', 0);
-                                        }
-                                    }),
+                                    ->afterStateUpdated(fn(Set $set, Get $get) => self::hitungDendaPerItem($set, $get)),
+
                                 TextInput::make('denda_item')
-                                    ->label('Denda Kerusakan/Hilang')
+                                    ->label('Denda (Auto)')
                                     ->numeric()
                                     ->prefix('Rp')
                                     ->default(0)
-                                    ->disabled(fn(Get $get) => $get('kondisi_kembali') === 'Baik')
-                                    ->dehydrated(),
+                                    ->readOnly()
+                                    ->dehydrated()
+                                    ->extraInputAttributes(['style' => 'background-color: #f3f4f6;']),
                             ])
                             ->columns(2)
-                            ->addActionLabel('Tambah Barang Kembali'),
+                            ->afterStateUpdated(fn(Set $set, Get $get) => self::hitungGrandTotal($set, $get)),
                     ]),
 
                 Section::make('Kalkulasi Pembayaran')
@@ -105,14 +126,19 @@ class PengembalianResource extends Resource
                             ->label('Denda Keterlambatan')
                             ->numeric()
                             ->prefix('Rp')
-                            ->default(0),
+                            ->default(0)
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn(Set $set, Get $get) => self::hitungGrandTotal($set, $get)),
 
                         TextInput::make('total_denda')
                             ->label('Total Harus Dibayar')
                             ->numeric()
                             ->prefix('Rp')
                             ->required()
-                            ->helperText('Jumlahkan Denda Keterlambatan + Total Denda Item'),
+                            ->readOnly()
+                            ->default(0)
+                            ->helperText('Otomatis: Denda Keterlambatan + Total Denda Item')
+                            ->extraInputAttributes(['style' => 'font-weight: bold; font-size: 1.1em; background-color: #ecfdf5; color: #065f46;']),
 
                         Select::make('status_pembayaran')
                             ->options([
@@ -131,19 +157,60 @@ class PengembalianResource extends Resource
             ->columns([
                 TextColumn::make('nomor_pengembalian')->searchable()->sortable(),
                 TextColumn::make('peminjaman.user.name')->label('Peminjam')->searchable(),
-                TextColumn::make('tanggal_kembali_real')->date(),
+                TextColumn::make('tanggal_kembali_real')->date()->label('Tgl Kembali'),
                 TextColumn::make('status_pembayaran')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
                         'Lunas' => 'success',
                         default => 'danger',
                     }),
-                TextColumn::make('total_denda')->money('IDR'),
+                TextColumn::make('total_denda')->money('IDR')->label('Total Tagihan'),
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
                 EditAction::make()->label('Verifikasi'),
             ]);
+    }
+
+    public static function hitungDendaPerItem(Set $set, Get $get)
+    {
+        $harga = (float) $get('harga_temp');
+        if ($harga == 0 && $get('alat_id')) {
+            $alat = Alat::find($get('alat_id'));
+            $harga = $alat ? $alat->harga_satuan : 0;
+            $set('harga_temp', $harga);
+        }
+
+        $jumlah = (int) $get('jumlah_kembali');
+        $kondisi = $get('kondisi_kembali');
+
+        $denda = 0;
+
+        if ($kondisi === 'Hilang') {
+            $denda = $harga * $jumlah * 1.0;
+        } elseif ($kondisi === 'Rusak') {
+            $denda = $harga * $jumlah * 0.5;
+        } else {
+            $denda = 0;
+        }
+
+        $set('denda_item', $denda);
+    }
+
+    public static function hitungGrandTotal(Set $set, Get $get)
+    {
+        $items = $get('details');
+        $totalDendaItem = 0;
+
+        if (is_array($items)) {
+            foreach ($items as $item) {
+                $totalDendaItem += (float) ($item['denda_item'] ?? 0);
+            }
+        }
+
+        $dendaTelat = (float) $get('denda_keterlambatan');
+
+        $set('total_denda', $totalDendaItem + $dendaTelat);
     }
 
     public static function getPages(): array
