@@ -3,14 +3,12 @@
 namespace App\Filament\Pages\Auth;
 
 use App\Enums\UserRole;
+use App\Models\User;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Filament\Auth\Pages\Login as BaseLogin;
 use Filament\Facades\Filament;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Notifications\Notification;
 use Illuminate\Auth\SessionGuard;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class Login extends BaseLogin
@@ -35,18 +33,22 @@ class Login extends BaseLogin
 
         $user = $authProvider->retrieveByCredentials($credentials);
 
-        if ((! $user) || (! $authProvider->validateCredentials($user, $credentials))) {
+        if ((!$user) || (!$authProvider->validateCredentials($user, $credentials))) {
             $this->userUndertakingMultiFactorAuthentication = null;
             $this->throwFailureValidationException();
         }
 
-        $validRoles = [UserRole::Admin, UserRole::Petugas, UserRole::Peminjam];
-        
-        if (! in_array($user->role, $validRoles)) {
+        if (!$user instanceof User) {
             $this->throwFailureValidationException();
         }
 
-        if (! $authGuard->attempt($credentials, $data['remember'] ?? false)) {
+        $validRoles = [UserRole::Admin, UserRole::Petugas, UserRole::Peminjam];
+
+        if (!in_array($user->role, $validRoles)) {
+            $this->throwFailureValidationException();
+        }
+
+        if (!$authGuard->attempt($credentials, $data['remember'] ?? false)) {
             $this->throwFailureValidationException();
         }
 
