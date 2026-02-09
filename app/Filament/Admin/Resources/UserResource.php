@@ -11,6 +11,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -61,7 +62,7 @@ class UserResource extends Resource
                 TextColumn::make('role')->badge(),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
+                EditAction::make(),
             ]);
     }
 
