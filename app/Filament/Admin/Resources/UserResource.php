@@ -11,6 +11,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use BackedEnum;
@@ -46,6 +47,17 @@ class UserResource extends Resource
             ->columns([
                 TextColumn::make('name')->searchable(),
                 TextColumn::make('email'),
+                TextColumn::make('is_active')
+                    ->label('Status')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        '1', 'true' => 'success',
+                        default => 'danger',
+                    })
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        '1', 'true' => 'Aktif',
+                        default => 'Nonaktif',
+                    }),
                 TextColumn::make('role')->badge(),
             ])
             ->actions([
