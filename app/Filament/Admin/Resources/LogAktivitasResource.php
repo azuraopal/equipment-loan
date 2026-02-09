@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\LogAktivitas\Pages\ManageLogAktivitas;
 
 use App\Models\LogAktivitas;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -86,7 +87,7 @@ class LogAktivitasResource extends Resource
                     ]),
             ])
             ->actions([
-                \Filament\Actions\ViewAction::make()
+                ViewAction::make()
                     ->modalHeading('Detail Log Aktivitas')
                     ->infolist([
                         TextEntry::make('jenis_aktivitas')->label('Aksi'),

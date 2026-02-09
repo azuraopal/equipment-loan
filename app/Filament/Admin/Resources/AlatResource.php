@@ -6,6 +6,8 @@ use App\Filament\Admin\Resources\Alats\Pages\CreateAlat;
 use App\Filament\Admin\Resources\Alats\Pages\EditAlat;
 use App\Filament\Admin\Resources\Alats\Pages\ListAlats;
 use App\Models\Alat;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -91,8 +93,8 @@ class AlatResource extends Resource
                 TextColumn::make('spesifikasi'),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ]);
     }
 

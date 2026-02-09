@@ -6,6 +6,8 @@ use App\Filament\Admin\Resources\Kategoris\Pages\CreateKategori;
 use App\Filament\Admin\Resources\Kategoris\Pages\EditKategori;
 use App\Filament\Admin\Resources\Kategoris\Pages\ListKategori;
 use App\Models\Kategori;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -45,8 +47,8 @@ class KategoriResource extends Resource
                     ->label('Jumlah Alat'),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ]);
     }
 
