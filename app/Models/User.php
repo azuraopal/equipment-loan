@@ -4,12 +4,13 @@ namespace App\Models;
 
 use App\Traits\MencatatAktivitas;
 use App\Enums\UserRole;
+use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, MencatatAktivitas;
@@ -52,11 +53,22 @@ class User extends Authenticatable
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return match ($panel->getId()) {
-            'admin' => $this->role === UserRole::Admin,
-            'petugas' => in_array($this->role, [UserRole::Admin, UserRole::Petugas]),
-            'peminjam' => $this->role === UserRole::Peminjam,
-            default => false,
-        };
+        if (!$this->is_active) {
+            return false;
+        }
+
+        if ($panel->getId() == 'admin') {
+            return $this->role === UserRole::Admin;
+        }
+
+        if ($panel->getId() == 'petugas') {
+            return $this->role === UserRole::Petugas;
+        }
+
+        if ($panel->getId() == 'peminjam') {
+            return $this->role === UserRole::Peminjam;
+        }
+
+        return false;
     }
 }
