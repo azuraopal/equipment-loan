@@ -2,7 +2,7 @@
 
 namespace App\Filament\Peminjam\Resources\Pengembalian\Pages;
 
-use App\Filament\Peminjam\Resources\Pengembalians\PengembalianResource;
+use App\Filament\Peminjam\Resources\Pengembalian\PengembalianResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 

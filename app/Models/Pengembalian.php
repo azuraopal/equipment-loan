@@ -13,6 +13,11 @@ class Pengembalian extends Model
     protected $guarded = [];
     protected $casts = [
         'tanggal_kembali_real' => 'date',
+        'tanggal_bayar' => 'date',
+        'denda_keterlambatan' => 'decimal:2',
+        'denda_kerusakan' => 'decimal:2',
+        'denda_kehilangan' => 'decimal:2',
+        'total_denda' => 'decimal:2',
     ];
 
     public function peminjaman(): BelongsTo
@@ -23,6 +28,11 @@ class Pengembalian extends Model
     public function petugas(): BelongsTo
     {
         return $this->belongsTo(User::class, 'petugas_id');
+    }
+
+    public function verifikator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
     }
 
     public function details(): HasMany

@@ -2,11 +2,17 @@
 
 namespace App\Filament\Peminjam\Resources\Pengembalian;
 
+use App\Filament\Peminjam\Resources\Pengembalian\Pages\CreatePengembalian;
 use App\Filament\Peminjam\Resources\Pengembalian\Pages\ListPengembalian;
+use App\Models\Peminjaman;
 use App\Models\Pengembalian;
+use Auth;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -20,10 +26,10 @@ class PengembalianResource extends Resource
 {
     protected static ?string $model = Pengembalian::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-archive-box-arrow-down';
 
-    protected static ?string $navigationLabel = 'Riwayat Pengembalian';
-    protected static ?string $pluralModelLabel = 'Riwayat Pengembalian';
+    protected static ?string $navigationLabel = 'Kembalikan Alat';
+    protected static ?string $pluralModelLabel = 'Kembalikan Alat';
 
     public static function canCreate(): bool
     {
@@ -41,116 +47,60 @@ class PengembalianResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema
-            ->components([
-                Section::make('Info Pengembalian')
-                    ->schema([
-                        TextInput::make('nomor_pengembalian')
-                            ->label('No. Kembali'),
+            ->schema([
+                Select::make('peminjaman_id')
+                    ->label('Pilih Peminjaman')
+                    ->options(function () {
 
-                        TextInput::make('peminjaman.user.name')
-                            ->label('Peminjam'),
+                        return Peminjaman::where('user_id', Auth::id())
+                            ->where('status', 'Disetujui')
+                            ->whereDoesntHave('pengembalian')
+                            ->pluck('nomor_peminjaman', 'id');
+                    })
+                    ->required()
+                    ->searchable()
+                    ->preload(),
 
-                        DatePicker::make('tanggal_kembali_real')
-                            ->label('Tgl Kembali'),
+                DatePicker::make('tanggal_kembali_real')
+                    ->label('Tanggal Pengembalian')
+                    ->default(now())
+                    ->required()
+                    ->maxDate(now()),
 
-                        TextInput::make('petugas.name')
-                            ->label('Petugas Penerima'),
-                    ])->columns(2),
+                Hidden::make('nomor_pengembalian')
+                    ->default(fn() => 'KEM-' . strtoupper(uniqid())),
 
-                Section::make('Rincian Denda')
-                    ->schema([
-                        TextInput::make('denda_keterlambatan')
-                            ->prefix('Rp')
-                            ->numeric(),
-
-                        TextInput::make('denda_kerusakan')
-                            ->label('Denda Rusak/Hilang')
-                            ->prefix('Rp')
-                            ->numeric(),
-
-                        TextInput::make('total_denda')
-                            ->prefix('Rp')
-                            ->numeric()
-                            ->extraInputAttributes(['style' => 'font-weight:bold']),
-
-                        TextInput::make('status_pembayaran')
-                            ->badge()
-                            ->color(fn(string $state): string => match ($state) {
-                                'Lunas' => 'success',
-                                'Belum_Lunas' => 'danger',
-                                default => 'gray',
-                            }),
-                    ])->columns(2),
-
-                Section::make('Barang Dikembalikan')
-                    ->schema([
-                        Repeater::make('details')
-                            ->relationship()
-                            ->schema([
-                                TextInput::make('alat.nama_alat')
-                                    ->label('Nama Alat'),
-                                TextInput::make('jumlah_kembali')
-                                    ->label('Qty'),
-                                TextInput::make('kondisi_kembali')
-                                    ->label('Kondisi'),
-                            ])
-                            ->addable(false)
-                            ->deletable(false)
-                            ->editable(false)
-                            ->columnSpanFull(),
-                    ]),
-
-                Textarea::make('catatan_pengembalian')
-                    ->label('Catatan Kerusakan/Kname: ehilangan')
-                    ->columnSpanFull(),
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn(Builder $query) => $query->whereHas('peminjaman', function ($q) {
+                $q->where('user_id', Auth::id());
+            }))
             ->columns([
-                TextColumn::make('nomor_pengembalian')
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('peminjaman.user.name')
-                    ->label('Peminjam')
-                    ->searchable(),
-
-                TextColumn::make('tanggal_kembali_real')
-                    ->date()
-                    ->label('Tgl Kembali')
-                    ->sortable(),
-
-                TextColumn::make('total_denda')
-                    ->money('IDR')
-                    ->label('Total Denda')
-                    ->sortable(),
-
+                TextColumn::make('nomor_pengembalian'),
+                TextColumn::make('peminjaman.nomor_peminjaman')->label('No. Pinjam'),
+                TextColumn::make('tanggal_kembali_real')->date(),
                 TextColumn::make('status_pembayaran')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
                         'Lunas' => 'success',
-                        'Belum_Lunas' => 'danger',
-                        default => 'gray',
+                        default => 'warning', 
                     }),
-
-                TextColumn::make('petugas.name')
-                    ->label('Petugas')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('total_denda')->money('IDR'),
             ])
-            ->defaultSort('created_at', 'desc')
             ->actions([
                 ViewAction::make(),
-            ])
-            ->bulkActions([]);
+            ]);
     }
 
     public static function getPages(): array
     {
         return [
             'index' => ListPengembalian::route('/'),
+            'create' => CreatePengembalian::route('/create'),
         ];
     }
 }

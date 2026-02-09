@@ -2,7 +2,7 @@
 
 namespace App\Filament\Petugas\Resources\Pengembalian\Pages;
 
-use App\Filament\Petugas\Resources\Pengembalians\PengembalianResource;
+use App\Filament\Petugas\Resources\Pengembalian\PengembalianResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 

@@ -23,6 +23,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Filament\Notifications\Notification;
 use BackedEnum;
+use UnitEnum;
 
 class PeminjamanResource extends Resource
 {
@@ -30,6 +31,7 @@ class PeminjamanResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-check-badge';
 
     protected static ?string $navigationLabel = 'Verifikasi Peminjaman';
+    protected static string|UnitEnum|null $navigationGroup = 'Transaksi';
 
     public static function canCreate(): bool
     {
