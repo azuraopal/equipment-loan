@@ -11,6 +11,10 @@ class PengembalianDetail extends Model
     use MencatatAktivitas;
     protected $guarded = [];
 
+    protected $casts = [
+        'denda_item' => 'decimal:2',
+    ];
+
     public function pengembalian(): BelongsTo
     {
         return $this->belongsTo(Pengembalian::class);

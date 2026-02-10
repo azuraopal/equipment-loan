@@ -35,4 +35,9 @@ class Peminjaman extends Model
         return $this->belongsToMany(Alat::class, 'peminjaman_alats', 'peminjaman_id', 'alat_id')
             ->withPivot('jumlah');
     }
+
+    public function pengembalian()
+    {
+        return $this->hasOne(Pengembalian::class);
+    }
 }

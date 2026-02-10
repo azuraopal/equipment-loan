@@ -65,4 +65,9 @@ class User extends Authenticatable implements FilamentUser
             default => false,
         };
     }
+
+    public function hasDendaBelumLunas(): bool
+    {
+        return \App\Services\DendaService::cekDendaBelumLunas($this->id);
+    }
 }

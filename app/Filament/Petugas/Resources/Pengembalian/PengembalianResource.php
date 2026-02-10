@@ -6,6 +6,7 @@ use App\Filament\Petugas\Resources\Pengembalian\Pages\EditPengembalian;
 use App\Filament\Petugas\Resources\Pengembalian\Pages\ListPengembalian;
 use App\Models\Alat;
 use App\Models\Pengembalian;
+use App\Services\DendaService;
 use Auth;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
@@ -100,8 +101,8 @@ class PengembalianResource extends Resource
                                 Select::make('kondisi_kembali')
                                     ->options([
                                         'Baik' => 'Baik (Denda 0)',
-                                        'Rusak' => 'Rusak (Denda 50%)',
-                                        'Hilang' => 'Hilang (Denda 100%)',
+                                        'Rusak' => 'Rusak (50% harga)',
+                                        'Hilang' => 'Hilang (100% + Admin Rp25rb)',
                                     ])
                                     ->required()
                                     ->reactive()
@@ -184,15 +185,7 @@ class PengembalianResource extends Resource
         $jumlah = (int) $get('jumlah_kembali');
         $kondisi = $get('kondisi_kembali');
 
-        $denda = 0;
-
-        if ($kondisi === 'Hilang') {
-            $denda = $harga * $jumlah * 1.0;
-        } elseif ($kondisi === 'Rusak') {
-            $denda = $harga * $jumlah * 0.5;
-        } else {
-            $denda = 0;
-        }
+        $denda = DendaService::hitungDendaItem($kondisi ?? 'Baik', $harga, $jumlah);
 
         $set('denda_item', $denda);
     }
