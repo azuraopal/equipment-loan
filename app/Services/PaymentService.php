@@ -17,10 +17,17 @@ class PaymentService
         Config::$isProduction = config('services.midtrans.is_production');
         Config::$isSanitized = config('services.midtrans.is_sanitized');
         Config::$is3ds = config('services.midtrans.is_3ds');
+
+        \Log::debug('PaymentService initialized');
     }
 
     public function createPayment(Pengembalian $pengembalian)
     {
+        \Log::debug('PaymentService::createPayment called', [
+            'pengembalian_id' => $pengembalian->id,
+            'status_pembayaran' => $pengembalian->status_pembayaran,
+        ]);
+
         $pendingPayment = $pengembalian->payments()->where('status', 'pending')->latest()->first();
 
         if ($pendingPayment) {
@@ -69,6 +76,12 @@ class PaymentService
 
             return $snapToken;
         } catch (\Exception $e) {
+            \Log::error('PaymentService::createPayment failed', [
+                'pengembalian_id' => $pengembalian->id,
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+
             throw new \Exception('Gagal membuat pembayaran: ' . $e->getMessage());
         }
     }

@@ -25,6 +25,9 @@ use BackedEnum;
 class PeminjamanResource extends Resource
 {
     protected static ?string $model = Peminjaman::class;
+    protected static ?string $slug = 'peminjaman';
+    protected static ?string $modelLabel = 'Peminjaman';
+    protected static ?string $pluralModelLabel = 'Peminjaman';
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-plus';
     protected static ?string $navigationLabel = 'Peminjaman Saya';
 
@@ -74,9 +77,18 @@ class PeminjamanResource extends Resource
         return $table
             ->modifyQueryUsing(fn($query) => $query->where('user_id', auth()->id()))
             ->columns([
-                TextColumn::make('nomor_peminjaman'),
-                TextColumn::make('tanggal_pinjam')->date(),
-                TextColumn::make('status')->badge(),
+                TextColumn::make('nomor_peminjaman')
+                    ->label('Nomor Peminjaman')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('tanggal_pinjam')
+                    ->label('Tanggal Pinjam')
+                    ->date('d M Y')
+                    ->sortable(),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->sortable(),
             ])
             ->actions([
                 Action::make('kembalikan')

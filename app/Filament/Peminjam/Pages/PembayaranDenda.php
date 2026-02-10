@@ -30,36 +30,50 @@ class PembayaranDenda extends Page implements HasForms, HasActions
 
     protected static bool $shouldRegisterNavigation = false;
 
-    public Pengembalian $record;
+    public static function getNavigationLabel(): string
+    {
+        return 'Pembayaran Denda';
+    }
+
+    public function getHeading(): string
+    {
+        return 'Pembayaran Denda';
+    }
+
+    public function getSubheading(): ?string
+    {
+        return 'Selesaikan pembayaran denda pengembalian terlambat melalui Midtrans';
+    }
+
+    public $recordId;
     public $snapToken;
     public ?array $data = [];
 
+    public function getRecordProperty()
+    {
+        return Pengembalian::with('peminjaman.alats')->find($this->recordId);
+    }
+
     public function mount(Pengembalian $record)
     {
-        $this->record = $record;
-        $paymentService = app(PaymentService::class);
+        $this->recordId = $record->id;
 
-        if ($this->record->peminjaman->user_id !== Auth::id()) {
+        $record = $this->record;
+
+        if ($record->peminjaman->user_id !== Auth::id()) {
             abort(403);
         }
 
-        if ($this->record->status_pembayaran === 'Lunas') {
+        if ($record->status_pembayaran === 'Lunas') {
             return redirect()->route('filament.peminjam.resources.pengembalian.index');
         }
 
-        try {
-            $this->snapToken = $paymentService->createPayment($this->record);
-        } catch (\Exception $e) {
-            $this->addError('payment', $e->getMessage());
+        $this->snapToken = app(PaymentService::class)->createPayment($record);
+
+        if (empty($this->snapToken)) {
+            return redirect()->route('filament.peminjam.resources.pengembalian.index');
         }
 
-        $this->form->fill([
-            'nomor_peminjaman' => $this->record->peminjaman->nomor_peminjaman,
-            'tanggal_pinjam' => $this->record->peminjaman->tanggal_pinjam->format('d M Y'),
-            'tanggal_kembali' => $this->record->tanggal_kembali_real?->format('d M Y') ?? '-',
-            'status_pembayaran' => $this->record->status_pembayaran === 'Belum_Lunas' ? 'Belum Lunas' : 'Lunas',
-            'total_denda' => 'Rp ' . number_format($this->record->total_denda, 0, ',', '.'),
-        ]);
     }
 
     public function form(Schema $schema): Schema
@@ -69,44 +83,58 @@ class PembayaranDenda extends Page implements HasForms, HasActions
                 Grid::make(3)
                     ->schema([
                         Section::make('Informasi Peminjaman')
+                            ->description('Detail peminjaman yang dikenakan denda')
+                            ->icon('heroicon-o-document-text')
                             ->columnSpan(2)
                             ->schema([
                                 Grid::make(2)
                                     ->schema([
                                         Placeholder::make('nomor_peminjaman')
                                             ->label('No. Peminjaman')
-                                            ->content(fn($get) => $get('nomor_peminjaman'))
+                                            ->content($this->record->peminjaman->nomor_peminjaman)
                                             ->icon('heroicon-o-hashtag'),
 
                                         Placeholder::make('tanggal_pinjam')
                                             ->label('Tanggal Pinjam')
-                                            ->content(fn($get) => $get('tanggal_pinjam')),
+                                            ->content($this->record->peminjaman->tanggal_pinjam)
+                                            ->icon('heroicon-o-calendar'),
 
                                         Placeholder::make('tanggal_kembali')
                                             ->label('Tanggal Kembali')
-                                            ->content(fn($get) => $get('tanggal_kembali')),
+                                            ->content($this->record->peminjaman->tanggal_kembali)
+                                            ->icon('heroicon-o-calendar-days'),
 
                                         Placeholder::make('status_pembayaran')
-                                            ->label('Status')
-                                            ->content(fn($get) => $get('status_pembayaran'))
-                                            ->extraAttributes(['class' => 'text-red-600 font-bold']),
+                                            ->label('Status Pembayaran')
+                                            ->content($this->record->status_pembayaran)
+                                            ->icon('heroicon-o-clock')
+                                            ->extraAttributes(['class' => 'font-semibold']),
                                     ]),
 
                                 ViewField::make('alats')
-                                    ->label('Daftar Barang')
-                                    ->view('filament.peminjam.pages.items-list'),
-                            ]),
+                                    ->label('Daftar Barang yang Dipinjam')
+                                    ->view('filament.peminjam.pages.items-list')
+                                    ->viewData([
+                                        'record' => $this->record,
+                                    ]),
+                            ])
+                            ->collapsible(),
 
-                        Section::make('Tagihan')
+                        Section::make('Tagihan & Pembayaran')
+                            ->description('Lakukan pembayaran denda secara online')
+                            ->icon('heroicon-o-currency-dollar')
                             ->columnSpan(1)
                             ->schema([
                                 Placeholder::make('total_denda')
                                     ->label('Total Denda')
-                                    ->content(fn($get) => $get('total_denda'))
-                                    ->extraAttributes(['class' => 'text-3xl font-bold text-red-600']),
+                                    ->content('Rp ' . number_format($this->record->total_denda, 0, ',', '.'))
+                                    ->extraAttributes(['class' => 'text-2xl font-bold text-danger-600 dark:text-danger-400']),
 
                                 ViewField::make('payment_button')
                                     ->view('filament.peminjam.pages.payment-button')
+                                    ->viewData([
+                                        'snapToken' => $this->snapToken,
+                                    ]),
                             ]),
                     ]),
             ])

@@ -10,7 +10,13 @@ trait MencatatAktivitas
     protected static function bootMencatatAktivitas()
     {
         static::created(function ($model) {
-            self::rekamLog($model, JenisAktivitas::INSERT, 'Menambahkan data baru', null, $model->toArray());
+            self::rekamLog(
+                $model,
+                JenisAktivitas::INSERT,
+                'Menambahkan data baru',
+                null,
+                $model->getAttributes()
+            );
         });
 
         static::updated(function ($model) {
@@ -21,7 +27,13 @@ trait MencatatAktivitas
         });
 
         static::deleted(function ($model) {
-            self::rekamLog($model, JenisAktivitas::DELETE, 'Menghapus data', $model->toArray(), null);
+            self::rekamLog(
+                $model,
+                JenisAktivitas::DELETE,
+                'Menghapus data',
+                $model->getOriginal(),
+                null
+            );
         });
     }
 
