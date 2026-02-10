@@ -10,6 +10,7 @@ enum PeminjamanStatus: string implements HasLabel, HasColor, HasIcon
     case Menunggu = 'Menunggu';
     case Disetujui = 'Disetujui';
     case Ditolak = 'Ditolak';
+    case Menunggu_Verifikasi_Kembali = 'Menunggu_Verifikasi_Kembali';
     case Kembali = 'Kembali';
 
     public function getLabel(): ?string
@@ -18,6 +19,7 @@ enum PeminjamanStatus: string implements HasLabel, HasColor, HasIcon
             self::Menunggu => 'Menunggu Persetujuan',
             self::Disetujui => 'Sedang Dipinjam',
             self::Ditolak => 'Ditolak',
+            self::Menunggu_Verifikasi_Kembali => 'Menunggu Verifikasi Pengembalian',
             self::Kembali => 'Sudah Dikembalikan',
         };
     }
@@ -28,6 +30,7 @@ enum PeminjamanStatus: string implements HasLabel, HasColor, HasIcon
             self::Menunggu => 'warning',
             self::Disetujui => 'success',
             self::Ditolak => 'danger',
+            self::Menunggu_Verifikasi_Kembali => 'gray',
             self::Kembali => 'info',
         };
     }
@@ -38,6 +41,7 @@ enum PeminjamanStatus: string implements HasLabel, HasColor, HasIcon
             self::Menunggu => 'heroicon-m-clock',
             self::Disetujui => 'heroicon-m-check-circle',
             self::Ditolak => 'heroicon-m-x-circle',
+            self::Menunggu_Verifikasi_Kembali => 'heroicon-m-arrow-uturn-left',
             self::Kembali => 'heroicon-m-arrow-left-on-rectangle',
         };
     }

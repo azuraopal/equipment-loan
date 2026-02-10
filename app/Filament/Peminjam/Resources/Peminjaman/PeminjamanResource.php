@@ -18,7 +18,7 @@ use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\DB;
+
 use Filament\Notifications\Notification;
 use BackedEnum;
 
@@ -84,21 +84,13 @@ class PeminjamanResource extends Resource
                     ->visible(fn(Peminjaman $r) => $r->status === PeminjamanStatus::Disetujui)
                     ->requiresConfirmation()
                     ->modalHeading('Konfirmasi Pengembalian')
-                    ->modalDescription('Apakah Anda yakin sudah mengembalikan alat ini ke Petugas? Status akan berubah menjadi Menunggu Verifikasi.')
+                    ->modalDescription('Petugas akan memverifikasi kondisi barang dan menghitung denda (jika ada). Status akan berubah menjadi "Menunggu Verifikasi Pengembalian".')
                     ->action(function (Peminjaman $record) {
+                        $record->update([
+                            'status' => PeminjamanStatus::Menunggu_Verifikasi_Kembali,
+                        ]);
 
-                        DB::transaction(function () use ($record) {
-                            foreach ($record->peminjamanDetails as $detail) {
-                                $detail->alat->increment('stok', $detail->jumlah);
-                            }
-
-                            $record->update([
-                                'status' => PeminjamanStatus::Kembali,
-                                'tanggal_kembali_real' => now(),
-                            ]);
-                        });
-
-                        Notification::make()->title('Terima kasih! Alat berhasil dikembalikan.')->success()->send();
+                        Notification::make()->title('Pengajuan pengembalian berhasil! Menunggu verifikasi petugas.')->success()->send();
                     }),
             ]);
     }

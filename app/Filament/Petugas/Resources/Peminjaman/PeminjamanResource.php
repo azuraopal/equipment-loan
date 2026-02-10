@@ -103,7 +103,7 @@ class PeminjamanResource extends Resource
                     ->label('Terima Barang')
                     ->color('info')
                     ->icon('heroicon-o-arrow-path')
-                    ->visible(fn(Peminjaman $r) => $r->status === PeminjamanStatus::Disetujui)
+                    ->visible(fn(Peminjaman $r) => in_array($r->status, [PeminjamanStatus::Disetujui, PeminjamanStatus::Menunggu_Verifikasi_Kembali]))
                     ->modalHeading('Verifikasi Pengembalian Barang')
                     ->modalDescription('Periksa kondisi fisik setiap barang yang dikembalikan. Denda akan dihitung secara otomatis berdasarkan keterlambatan dan kondisi barang.')
                     ->modalWidth('4xl')
