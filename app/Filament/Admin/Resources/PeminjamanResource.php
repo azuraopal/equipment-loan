@@ -36,7 +36,7 @@ class PeminjamanResource extends Resource
     protected static ?string $model = Peminjaman::class;
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-check-badge';
 
-    protected static ?string $navigationLabel = 'Verifikasi Peminjaman';
+    protected static ?string $navigationLabel = 'Peminjaman';
     protected static string|UnitEnum|null $navigationGroup = 'Transaksi';
 
     public static function canCreate(): bool
