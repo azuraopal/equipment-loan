@@ -5,7 +5,6 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\Peminjaman\Pages\CreatePeminjaman;
 use App\Filament\Admin\Resources\Peminjaman\Pages\EditPeminjaman;
 use App\Filament\Admin\Resources\Peminjaman\Pages\ListPeminjaman;
-use App\Models\Alat;
 use App\Models\Peminjaman;
 use App\Enums\PeminjamanStatus;
 use App\Models\Pengembalian;
@@ -15,13 +14,11 @@ use Carbon\Carbon;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -131,6 +128,7 @@ class PeminjamanResource extends Resource
                             ->schema([
                                 DatePicker::make('tanggal_kembali_real')
                                     ->label('Tanggal Dikembalikan')
+                                    ->native(false)
                                     ->default(now())
                                     ->required()
                                     ->live()

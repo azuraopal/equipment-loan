@@ -61,6 +61,7 @@ class PengembalianResource extends Resource
                     ->label('Tanggal Pengembalian')
                     ->default(now())
                     ->required()
+                    ->native(false)
                     ->maxDate(now()),
 
                 Hidden::make('nomor_pengembalian')

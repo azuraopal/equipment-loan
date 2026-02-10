@@ -61,6 +61,7 @@ class PengembalianResource extends Resource
                         DatePicker::make('tanggal_kembali_real')
                             ->label('Tanggal Terima Fisik')
                             ->required()
+                            ->native(false)
                             ->default(now()),
                     ])->columns(2),
 

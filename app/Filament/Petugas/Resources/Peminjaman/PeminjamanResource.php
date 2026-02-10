@@ -13,7 +13,6 @@ use Carbon\Carbon;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -120,6 +119,7 @@ class PeminjamanResource extends Resource
                                     ->label('Tanggal Dikembalikan')
                                     ->default(now())
                                     ->required()
+                                    ->native(false)
                                     ->live()
                                     ->helperText('Ubah tanggal untuk menghitung ulang denda.')
                                     ->afterStateUpdated(function (Set $set, Get $get, Peminjaman $record) {

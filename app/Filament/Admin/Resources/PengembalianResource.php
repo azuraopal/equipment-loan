@@ -61,6 +61,7 @@ class PengembalianResource extends Resource
                             ->required()
                             ->unique(ignoreRecord: true),
                         DatePicker::make('tanggal_kembali_real')
+                            ->native(false)
                             ->required(),
                         Select::make('petugas_id')
                             ->relationship('petugas', 'name')
