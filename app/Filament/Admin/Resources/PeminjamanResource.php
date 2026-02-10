@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\Peminjaman\Pages\CreatePeminjaman;
 use App\Filament\Admin\Resources\Peminjaman\Pages\EditPeminjaman;
 use App\Filament\Admin\Resources\Peminjaman\Pages\ListPeminjaman;
+use App\Models\Alat;
 use App\Models\Peminjaman;
 use App\Enums\PeminjamanStatus;
 use App\Models\Pengembalian;
@@ -12,6 +13,8 @@ use App\Models\PengembalianDetail;
 use App\Services\DendaService;
 use Carbon\Carbon;
 use Exception;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ViewAction;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
@@ -19,9 +22,9 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
@@ -37,6 +40,9 @@ class PeminjamanResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-check-badge';
 
     protected static ?string $navigationLabel = 'Peminjaman';
+    protected static ?string $slug = 'peminjaman';
+    protected static ?string $modelLabel = 'Peminjaman';
+    protected static ?string $pluralModelLabel = 'Peminjaman';
     protected static string|UnitEnum|null $navigationGroup = 'Transaksi';
 
     public static function canCreate(): bool
@@ -55,7 +61,58 @@ class PeminjamanResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([]);
+        return $schema
+            ->components([
+                Section::make('Informasi Peminjaman')
+                    ->schema([
+                        Select::make('user_id')
+                            ->label('Peminjam')
+                            ->relationship('user', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+                        DatePicker::make('tanggal_pinjam')
+                            ->default(now())
+                            ->required()
+                            ->native(false),
+                        DatePicker::make('tanggal_kembali_rencana')
+                            ->label('Rencana Kembali')
+                            ->required()
+                            ->native(false)
+                            ->after('tanggal_pinjam'),
+                        Textarea::make('keperluan')
+                            ->required()
+                            ->columnSpanFull(),
+                    ])->columns(2),
+
+                Section::make('Barang yang Dipinjam')
+                    ->schema([
+                        Repeater::make('peminjamanDetails')
+                            ->relationship()
+                            ->schema([
+                                Select::make('alat_id')
+                                    ->label('Alat')
+                                    ->options(Alat::where('stok', '>', 0)->pluck('nama_alat', 'id'))
+                                    ->searchable()
+                                    ->required()
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, Set $set) {
+                                        $stok = Alat::find($state)?->stok ?? 0;
+                                        $set('max_stok', $stok);
+                                    }),
+                                TextInput::make('jumlah')
+                                    ->numeric()
+                                    ->default(1)
+                                    ->minValue(1)
+                                    ->maxValue(fn(Get $get) => $get('max_stok') ?? 100)
+                                    ->required(),
+                                Hidden::make('max_stok'),
+                            ])
+                            ->minItems(1)
+                            ->columns(2)
+                    ]),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -74,7 +131,37 @@ class PeminjamanResource extends Resource
                     ->color('success')
                     ->icon('heroicon-o-check')
                     ->visible(fn(Peminjaman $r) => $r->status === PeminjamanStatus::Menunggu)
-                    ->requiresConfirmation()
+                    ->modalHeading('Setujui Peminjaman')
+                    ->modalContent(function (Peminjaman $record) {
+                        $record->load('peminjamanDetails.alat', 'user');
+                        $html = '<div style="font-size:14px; line-height:1.7;">';
+                        $html .= '<div style="display:flex; gap:24px; margin-bottom:12px;">';
+                        $html .= '<div><span style="color:#9ca3af;">Peminjam</span><br><strong>' . e($record->user->name) . '</strong></div>';
+                        $html .= '<div><span style="color:#9ca3af;">No. Peminjaman</span><br><strong>' . e($record->nomor_peminjaman) . '</strong></div>';
+                        $html .= '<div><span style="color:#9ca3af;">Periode</span><br><strong>' . Carbon::parse($record->tanggal_pinjam)->format('d/m/Y') . ' — ' . Carbon::parse($record->tanggal_kembali_rencana)->format('d/m/Y') . '</strong></div>';
+                        $html .= '</div>';
+                        $html .= '<div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:12px; margin-top:4px;">';
+                        $html .= '<span style="color:#9ca3af; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Barang yang dipinjam</span>';
+                        $html .= '<table style="width:100%; margin-top:8px; border-collapse:collapse;">';
+                        $html .= '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1); text-align:left;">';
+                        $html .= '<th style="padding:6px 8px; color:#9ca3af; font-weight:500; font-size:12px;">Nama Alat</th>';
+                        $html .= '<th style="padding:6px 8px; color:#9ca3af; font-weight:500; font-size:12px; text-align:center;">Qty</th>';
+                        $html .= '<th style="padding:6px 8px; color:#9ca3af; font-weight:500; font-size:12px; text-align:center;">Stok Sisa</th>';
+                        $html .= '</tr></thead><tbody>';
+                        foreach ($record->peminjamanDetails as $detail) {
+                            $alat = $detail->alat;
+                            $stokColor = $alat->stok < $detail->jumlah ? '#ef4444' : '#22c55e';
+                            $html .= '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+                            $html .= '<td style="padding:8px;">' . e($alat->nama_alat) . '</td>';
+                            $html .= '<td style="padding:8px; text-align:center; font-weight:600;">' . $detail->jumlah . '</td>';
+                            $html .= '<td style="padding:8px; text-align:center; color:' . $stokColor . '; font-weight:600;">' . $alat->stok . '</td>';
+                            $html .= '</tr>';
+                        }
+                        $html .= '</tbody></table></div></div>';
+                        return new \Illuminate\Support\HtmlString($html);
+                    })
+                    ->modalIcon('heroicon-o-check-circle')
+                    ->modalSubmitActionLabel('Ya, Setujui')
                     ->action(function (Peminjaman $record) {
                         DB::transaction(function () use ($record) {
                             foreach ($record->peminjamanDetails as $detail) {
@@ -333,6 +420,8 @@ class PeminjamanResource extends Resource
                             ->success()
                             ->send();
                     }),
+                ViewAction::make(),
+                DeleteAction::make(),
             ]);
     }
 

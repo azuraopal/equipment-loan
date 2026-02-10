@@ -36,6 +36,9 @@ class PeminjamanResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-check-badge';
 
     protected static ?string $navigationLabel = 'Verifikasi Peminjaman';
+    protected static ?string $slug = 'peminjaman';
+    protected static ?string $modelLabel = 'Peminjaman';
+    protected static ?string $pluralModelLabel = 'Peminjaman';
 
     public static function canCreate(): bool
     {
@@ -63,7 +66,37 @@ class PeminjamanResource extends Resource
                     ->color('success')
                     ->icon('heroicon-o-check')
                     ->visible(fn(Peminjaman $r) => $r->status === PeminjamanStatus::Menunggu)
-                    ->requiresConfirmation()
+                    ->modalHeading('Setujui Peminjaman')
+                    ->modalContent(function (Peminjaman $record) {
+                        $record->load('peminjamanDetails.alat', 'user');
+                        $html = '<div style="font-size:14px; line-height:1.7;">';
+                        $html .= '<div style="display:flex; gap:24px; margin-bottom:12px;">';
+                        $html .= '<div><span style="color:#9ca3af;">Peminjam</span><br><strong>' . e($record->user->name) . '</strong></div>';
+                        $html .= '<div><span style="color:#9ca3af;">No. Peminjaman</span><br><strong>' . e($record->nomor_peminjaman) . '</strong></div>';
+                        $html .= '<div><span style="color:#9ca3af;">Periode</span><br><strong>' . Carbon::parse($record->tanggal_pinjam)->format('d/m/Y') . ' — ' . Carbon::parse($record->tanggal_kembali_rencana)->format('d/m/Y') . '</strong></div>';
+                        $html .= '</div>';
+                        $html .= '<div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:12px; margin-top:4px;">';
+                        $html .= '<span style="color:#9ca3af; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Barang yang dipinjam</span>';
+                        $html .= '<table style="width:100%; margin-top:8px; border-collapse:collapse;">';
+                        $html .= '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1); text-align:left;">';
+                        $html .= '<th style="padding:6px 8px; color:#9ca3af; font-weight:500; font-size:12px;">Nama Alat</th>';
+                        $html .= '<th style="padding:6px 8px; color:#9ca3af; font-weight:500; font-size:12px; text-align:center;">Qty</th>';
+                        $html .= '<th style="padding:6px 8px; color:#9ca3af; font-weight:500; font-size:12px; text-align:center;">Stok Sisa</th>';
+                        $html .= '</tr></thead><tbody>';
+                        foreach ($record->peminjamanDetails as $detail) {
+                            $alat = $detail->alat;
+                            $stokColor = $alat->stok < $detail->jumlah ? '#ef4444' : '#22c55e';
+                            $html .= '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+                            $html .= '<td style="padding:8px;">' . e($alat->nama_alat) . '</td>';
+                            $html .= '<td style="padding:8px; text-align:center; font-weight:600;">' . $detail->jumlah . '</td>';
+                            $html .= '<td style="padding:8px; text-align:center; color:' . $stokColor . '; font-weight:600;">' . $alat->stok . '</td>';
+                            $html .= '</tr>';
+                        }
+                        $html .= '</tbody></table></div></div>';
+                        return new \Illuminate\Support\HtmlString($html);
+                    })
+                    ->modalIcon('heroicon-o-check-circle')
+                    ->modalSubmitActionLabel('Ya, Setujui')
                     ->action(function (Peminjaman $record) {
                         DB::transaction(function () use ($record) {
                             foreach ($record->peminjamanDetails as $detail) {
