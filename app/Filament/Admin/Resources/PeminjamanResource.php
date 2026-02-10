@@ -15,12 +15,14 @@ use Carbon\Carbon;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -116,127 +118,154 @@ class PeminjamanResource extends Resource
                     ->icon('heroicon-o-arrow-path')
                     ->visible(fn(Peminjaman $r) => $r->status === PeminjamanStatus::Disetujui)
                     ->modalHeading('Verifikasi Pengembalian Barang')
-                    ->modalDescription('Cek kondisi fisik barang. Denda dihitung otomatis.')
-                    ->modalWidth('3xl')
+                    ->modalDescription('Periksa kondisi fisik setiap barang yang dikembalikan. Denda akan dihitung secara otomatis berdasarkan keterlambatan dan kondisi barang.')
+                    ->modalWidth('4xl')
+                    ->modalIcon('heroicon-o-arrow-path-rounded-square')
+                    ->modalSubmitActionLabel('Konfirmasi Pengembalian')
                     ->form(fn(Schema $schema) => $schema->components([
 
-                        DatePicker::make('tanggal_kembali_real')
-                            ->label('Tanggal Dikembalikan')
-                            ->default(now())
-                            ->required()
-                            ->live()
-                            ->afterStateUpdated(function (Set $set, Get $get, Peminjaman $record) {
-                                $tanggal = $get('tanggal_kembali_real');
-                                if ($tanggal) {
-                                    $hari = DendaService::hitungHariTerlambat($record, Carbon::parse($tanggal));
-                                    $denda = DendaService::hitungDendaTelat($record, Carbon::parse($tanggal));
-                                    $set('hari_terlambat', $hari);
-                                    $set('denda_keterlambatan', $denda);
-                                    self::hitungGrandTotal($set, $get);
-                                }
-                            }),
-
-                        Grid::make(2)->schema([
-                            TextInput::make('hari_terlambat')
-                                ->label('Hari Terlambat')
-                                ->numeric()
-                                ->default(fn(Peminjaman $record) => DendaService::hitungHariTerlambat($record, Carbon::parse(now())))
-                                ->readOnly()
-                                ->extraInputAttributes(['style' => 'background-color: #f3f4f6;']),
-
-                            TextInput::make('denda_keterlambatan')
-                                ->label('Denda Telat (Rp5.000/hari)')
-                                ->prefix('Rp')
-                                ->numeric()
-                                ->default(fn(Peminjaman $record) => DendaService::hitungDendaTelat($record, Carbon::parse(now())))
-                                ->readOnly()
-                                ->extraInputAttributes(['style' => 'background-color: #f3f4f6;']),
-                        ]),
-
-                        Repeater::make('items')
-                            ->label('Kondisi Barang')
-                            ->live()
+                        Section::make('Tanggal Pengembalian')
+                            ->description('Pilih tanggal barang dikembalikan. Keterlambatan & denda dihitung otomatis.')
+                            ->icon('heroicon-o-calendar-days')
+                            ->columns(3)
                             ->schema([
-                                Hidden::make('alat_id'),
-                                Hidden::make('jumlah'),
-                                Hidden::make('harga_satuan'),
-
-                                TextInput::make('nama_alat')
-                                    ->label('Alat')
-                                    ->disabled()
-                                    ->dehydrated(),
-
-                                TextInput::make('jumlah_display')
-                                    ->label('Jumlah')
-                                    ->disabled()
-                                    ->dehydrated(false),
-
-                                Select::make('kondisi_kembali')
-                                    ->label('Kondisi')
-                                    ->options([
-                                        'Baik' => 'Baik (Denda 0)',
-                                        'Rusak' => 'Rusak (50% harga)',
-                                        'Hilang' => 'Hilang (100% + Admin Rp25rb)',
-                                    ])
+                                DatePicker::make('tanggal_kembali_real')
+                                    ->label('Tanggal Dikembalikan')
+                                    ->default(now())
                                     ->required()
-                                    ->default('Baik')
-                                    ->reactive()
-                                    ->afterStateUpdated(function (Set $set, Get $get) {
-                                        $harga = (float) $get('harga_satuan');
-                                        $jumlah = (int) $get('jumlah');
-                                        $kondisi = $get('kondisi_kembali');
-                                        $denda = DendaService::hitungDendaItem($kondisi, $harga, $jumlah);
-                                        $set('denda_item', $denda);
+                                    ->live()
+                                    ->helperText('Ubah tanggal untuk menghitung ulang denda.')
+                                    ->afterStateUpdated(function (Set $set, Get $get, Peminjaman $record) {
+                                        $tanggal = $get('tanggal_kembali_real');
+                                        if ($tanggal) {
+                                            $hari = DendaService::hitungHariTerlambat($record, Carbon::parse($tanggal));
+                                            $denda = DendaService::hitungDendaTelat($record, Carbon::parse($tanggal));
+                                            $set('hari_terlambat', $hari);
+                                            $set('denda_keterlambatan', $denda);
+                                            self::hitungGrandTotal($set, $get);
+                                        }
                                     }),
 
-                                TextInput::make('denda_item')
-                                    ->label('Denda Item')
+                                TextInput::make('hari_terlambat')
+                                    ->label('Hari Terlambat')
+                                    ->numeric()
+                                    ->default(fn(Peminjaman $record) => DendaService::hitungHariTerlambat($record, Carbon::parse(now())))
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->suffix('hari')
+                                    ->helperText('Dihitung otomatis'),
+
+                                TextInput::make('denda_keterlambatan')
+                                    ->label('Denda Keterlambatan')
                                     ->prefix('Rp')
                                     ->numeric()
-                                    ->default(0)
-                                    ->readOnly()
+                                    ->default(fn(Peminjaman $record) => DendaService::hitungDendaTelat($record, Carbon::parse(now())))
+                                    ->disabled()
                                     ->dehydrated()
-                                    ->extraInputAttributes(['style' => 'background-color: #f3f4f6;']),
+                                    ->helperText('Tarif: Rp5.000/hari'),
+                            ]),
 
-                                Textarea::make('catatan_kondisi')
-                                    ->label('Catatan')
-                                    ->placeholder('Keterangan kerusakan/kehilangan...')
-                                    ->visible(fn(Get $get) => in_array($get('kondisi_kembali'), ['Rusak', 'Hilang']))
-                                    ->columnSpanFull(),
-                            ])
+                        Section::make('Kondisi Barang')
+                            ->description('Periksa dan tentukan kondisi setiap barang yang dikembalikan.')
+                            ->icon('heroicon-o-cube')
+                            ->schema([
+                                Repeater::make('items')
+                                    ->hiddenLabel()
+                                    ->live()
+                                    ->schema([
+                                        Hidden::make('alat_id'),
+                                        Hidden::make('jumlah'),
+                                        Hidden::make('harga_satuan'),
+
+                                        TextInput::make('nama_alat')
+                                            ->label('Nama Alat')
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->prefixIcon('heroicon-m-wrench-screwdriver'),
+
+                                        TextInput::make('jumlah_display')
+                                            ->label('Jumlah')
+                                            ->disabled()
+                                            ->dehydrated(false)
+                                            ->prefixIcon('heroicon-m-hashtag'),
+
+                                        Select::make('kondisi_kembali')
+                                            ->label('Kondisi')
+                                            ->options([
+                                                'Baik' => '✅ Baik (Denda 0)',
+                                                'Rusak' => '⚠️ Rusak (50% harga)',
+                                                'Hilang' => '❌ Hilang (100% + Admin Rp25rb)',
+                                            ])
+                                            ->required()
+                                            ->default('Baik')
+                                            ->reactive()
+                                            ->prefixIcon('heroicon-m-shield-check')
+                                            ->afterStateUpdated(function (Set $set, Get $get) {
+                                                $harga = (float) $get('harga_satuan');
+                                                $jumlah = (int) $get('jumlah');
+                                                $kondisi = $get('kondisi_kembali');
+                                                $denda = DendaService::hitungDendaItem($kondisi, $harga, $jumlah);
+                                                $set('denda_item', $denda);
+                                            }),
+
+                                        TextInput::make('denda_item')
+                                            ->label('Denda Item')
+                                            ->prefix('Rp')
+                                            ->numeric()
+                                            ->default(0)
+                                            ->disabled()
+                                            ->dehydrated(),
+
+                                        Textarea::make('catatan_kondisi')
+                                            ->label('Catatan Kerusakan/Kehilangan')
+                                            ->placeholder('Jelaskan detail kerusakan atau kehilangan barang...')
+                                            ->visible(fn(Get $get) => in_array($get('kondisi_kembali'), ['Rusak', 'Hilang']))
+                                            ->columnSpanFull()
+                                            ->rows(2),
+                                    ])
+                                    ->columns(4)
+                                    ->addable(false)
+                                    ->deletable(false)
+                                    ->reorderable(false)
+                                    ->default(fn(Peminjaman $record) => $record->peminjamanDetails->map(fn($d) => [
+                                        'alat_id' => $d->alat_id,
+                                        'jumlah' => $d->jumlah,
+                                        'harga_satuan' => $d->alat->harga_satuan,
+                                        'nama_alat' => $d->alat->nama_alat,
+                                        'jumlah_display' => $d->jumlah . ' unit',
+                                        'kondisi_kembali' => 'Baik',
+                                        'denda_item' => 0,
+                                        'catatan_kondisi' => null,
+                                    ])->toArray())
+                                    ->afterStateUpdated(fn(Set $set, Get $get) => self::hitungGrandTotal($set, $get)),
+                            ]),
+
+                        Section::make('Ringkasan Denda & Pembayaran')
+                            ->description('Total denda dihitung otomatis dari keterlambatan + kondisi barang.')
+                            ->icon('heroicon-o-banknotes')
                             ->columns(2)
-                            ->addable(false)
-                            ->deletable(false)
-                            ->reorderable(false)
-                            ->default(fn(Peminjaman $record) => $record->peminjamanDetails->map(fn($d) => [
-                                'alat_id' => $d->alat_id,
-                                'jumlah' => $d->jumlah,
-                                'harga_satuan' => $d->alat->harga_satuan,
-                                'nama_alat' => $d->alat->nama_alat,
-                                'jumlah_display' => $d->jumlah . ' unit',
-                                'kondisi_kembali' => 'Baik',
-                                'denda_item' => 0,
-                                'catatan_kondisi' => null,
-                            ])->toArray())
-                            ->afterStateUpdated(fn(Set $set, Get $get) => self::hitungGrandTotal($set, $get)),
+                            ->schema([
+                                TextInput::make('total_denda')
+                                    ->label('Total Denda Keseluruhan')
+                                    ->prefix('Rp')
+                                    ->numeric()
+                                    ->default(fn(Peminjaman $record) => DendaService::hitungDendaTelat($record, Carbon::parse(now())))
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->hint('Dihitung otomatis')
+                                    ->hintIcon('heroicon-m-calculator')
+                                    ->hintColor('success')
+                                    ->extraInputAttributes(['style' => 'font-weight: 700; font-size: 1.15em; color: #065f46;']),
 
-                        Grid::make(2)->schema([
-                            TextInput::make('total_denda')
-                                ->label('Total Denda')
-                                ->prefix('Rp')
-                                ->numeric()
-                                ->default(fn(Peminjaman $record) => DendaService::hitungDendaTelat($record, Carbon::parse(now())))
-                                ->readOnly()
-                                ->extraInputAttributes(['style' => 'font-weight: bold; font-size: 1.1em; background-color: #ecfdf5; color: #065f46;']),
-
-                            Select::make('status_pembayaran')
-                                ->label('Status Bayar')
-                                ->options([
-                                    'Belum_Lunas' => 'Belum Lunas',
-                                    'Lunas' => 'Lunas',
-                                ])
-                                ->default('Belum_Lunas'),
-                        ]),
+                                Select::make('status_pembayaran')
+                                    ->label('Status Pembayaran')
+                                    ->options([
+                                        'Belum_Lunas' => '🔴 Belum Lunas',
+                                        'Lunas' => '🟢 Lunas',
+                                    ])
+                                    ->default('Belum_Lunas')
+                                    ->prefixIcon('heroicon-m-credit-card'),
+                            ]),
                     ]))
                     ->action(function (Peminjaman $record, array $data) {
                         DB::transaction(function () use ($record, $data) {
