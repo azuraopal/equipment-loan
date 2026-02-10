@@ -22,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        \App\Models\Peminjaman::observe(\App\Observers\PeminjamanObserver::class);
+
         Filament::serving(function () {
             if (!Auth::check())
                 return;

@@ -27,6 +27,7 @@ class PeminjamPanelProvider extends PanelProvider
             ->id('peminjam')
             ->path('peminjam')
             ->authGuard('web')
+            ->databaseNotifications()
             ->colors([
                 'primary' => Color::Green,
             ])
@@ -36,10 +37,7 @@ class PeminjamPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Peminjam/Widgets'), for: 'App\Filament\Peminjam\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
-            ])
+            ->widgets([])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
