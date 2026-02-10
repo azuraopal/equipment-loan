@@ -39,3 +39,5 @@ Route::middleware(['auth'])->prefix('admin/laporan')->group(function () {
     Route::get('/pengembalian', [\App\Http\Controllers\LaporanController::class, 'pengembalian'])->name('laporan.pengembalian');
     Route::get('/inventaris', [\App\Http\Controllers\LaporanController::class, 'inventaris'])->name('laporan.inventaris');
 });
+
+Route::middleware(['auth'])->get('/payment/{pengembalian}', [\App\Http\Controllers\PaymentController::class, 'showPayment'])->name('payment.show');

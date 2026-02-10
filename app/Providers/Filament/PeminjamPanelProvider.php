@@ -19,6 +19,8 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
+use App\Filament\Peminjam\Resources\Pengembalian\PengembalianResource;
+
 class PeminjamPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -30,6 +32,9 @@ class PeminjamPanelProvider extends PanelProvider
             ->databaseNotifications()
             ->colors([
                 'primary' => Color::Green,
+            ])
+            ->resources([
+                PengembalianResource::class,
             ])
             ->discoverResources(in: app_path('Filament/Peminjam/Resources'), for: 'App\Filament\Peminjam\Resources')
             ->discoverPages(in: app_path('Filament/Peminjam/Pages'), for: 'App\Filament\Peminjam\Pages')

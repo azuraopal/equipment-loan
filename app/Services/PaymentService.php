@@ -7,6 +7,8 @@ use App\Models\Pengembalian;
 use Midtrans\Config;
 use Midtrans\Snap;
 
+use Midtrans\Transaction;
+
 class PaymentService
 {
     public function __construct()
@@ -19,10 +21,25 @@ class PaymentService
 
     public function createPayment(Pengembalian $pengembalian)
     {
-        // Check if there is already a pending payment
-        $pendingPayment = $pengembalian->payments()->where('status', 'pending')->first();
+        $pendingPayment = $pengembalian->payments()->where('status', 'pending')->latest()->first();
+
         if ($pendingPayment) {
-            return $pendingPayment->snap_token;
+            try {
+                $status = Transaction::status($pendingPayment->order_id);
+
+                if (in_array($status->transaction_status, ['expire', 'cancel', 'deny', 'failure'])) {
+                    $pendingPayment->update(['status' => 'expired']);
+                    $pendingPayment = null;
+                } elseif ($status->transaction_status == 'settlement' || $status->transaction_status == 'capture') {
+                    $pendingPayment->update(['status' => 'success']);
+                    $pengembalian->update(['status_pembayaran' => 'Lunas']);
+                    return null;
+                } else {
+                    return $pendingPayment->snap_token;
+                }
+            } catch (\Exception $e) {
+                return $pendingPayment->snap_token;
+            }
         }
 
         $orderId = 'PAY-' . $pengembalian->id . '-' . time();
@@ -37,7 +54,6 @@ class PaymentService
                 'first_name' => $pengembalian->peminjaman->user->name,
                 'email' => $pengembalian->peminjaman->user->email,
             ],
-            'enabled_payments' => ['other_qris'],
         ];
 
         try {

@@ -28,6 +28,8 @@ class PengembalianResource extends Resource
     protected static ?string $navigationLabel = 'Kembalikan Alat';
     protected static ?string $pluralModelLabel = 'Kembalikan Alat';
 
+    protected static ?string $slug = 'pengembalian';
+
     public static function canCreate(): bool
     {
         return false;
@@ -74,7 +76,7 @@ class PengembalianResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn(Builder $query) => $query->whereHas('peminjaman', function ($q) {
+            ->modifyQueryUsing(fn(\Illuminate\Database\Eloquent\Builder $query) => $query->whereHas('peminjaman', function ($q) {
                 $q->where('user_id', Auth::id());
             }))
             ->columns([
@@ -95,7 +97,7 @@ class PengembalianResource extends Resource
                     ->label('Bayar Denda')
                     ->icon('heroicon-o-currency-dollar')
                     ->color('danger')
-                    ->url(fn(Pengembalian $record) => route('payment.show', $record))
+                    ->url(fn(Pengembalian $record) => \App\Filament\Peminjam\Pages\PembayaranDenda::getUrl(['record' => $record]))
                     ->openUrlInNewTab(false)
                     ->visible(fn(Pengembalian $record) => $record->status_pembayaran === 'Belum_Lunas' && $record->total_denda > 0),
             ]);

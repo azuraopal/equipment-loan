@@ -10,11 +10,11 @@ class PengembalianPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, [UserRole::Admin, UserRole::Petugas]);
+        return in_array($user->role, [UserRole::Admin, UserRole::Petugas, UserRole::Peminjam]);
     }
 
     public function view(User $user, Pengembalian $pengembalian): bool
-    {
+    {   
         if ($user->role === UserRole::Peminjam) {
             return $user->id === $pengembalian->peminjaman->user_id;
         }
