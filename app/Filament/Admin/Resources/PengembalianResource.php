@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\Pengembalian\Pages\CreatePengembalian;
 use App\Filament\Admin\Resources\Pengembalian\Pages\EditPengembalian;
 use App\Filament\Admin\Resources\Pengembalian\Pages\ListPengembalian;
 use App\Models\Pengembalian;
+use Carbon\Carbon;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -20,6 +21,7 @@ use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use BackedEnum;
+use Illuminate\Support\HtmlString;
 use UnitEnum;
 
 class PengembalianResource extends Resource
@@ -102,23 +104,7 @@ class PengembalianResource extends Resource
                             ->addActionLabel('Tambah Alat'),
                     ]),
 
-                Section::make('Total Denda & Pembayaran')
-                    ->schema([
-                        TextInput::make('denda_keterlambatan')
-                            ->numeric()
-                            ->prefix('Rp')
-                            ->default(0),
-                        TextInput::make('total_denda')
-                            ->numeric()
-                            ->prefix('Rp')
-                            ->default(0),
-                        Select::make('status_pembayaran')
-                            ->options([
-                                'Belum_Lunas' => 'Belum Lunas',
-                                'Lunas' => 'Lunas',
-                            ])
-                            ->default('Belum_Lunas'),
-                    ])->columns(3),
+
             ]);
     }
 
@@ -140,10 +126,93 @@ class PengembalianResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
-                ViewAction::make(),
+                ViewAction::make()
+                    ->label('View')
+                    ->icon('heroicon-o-eye')
+                    ->modalWidth('4xl')
+                    ->modalContent(fn(Pengembalian $record) => self::renderViewContent($record))
+                    ->modalHeading('Detail Pengembalian'),
                 EditAction::make(),
                 DeleteAction::make(),
             ]);
+    }
+
+    protected static function renderViewContent(Pengembalian $record): HtmlString
+    {
+        $record->load('details.alat', 'peminjaman.user', 'petugas');
+
+        $html = '<div style="font-size:14px; line-height:1.7;">';
+
+        $html .= '<div style="background-color:rgba(255,255,255,0.03); padding:16px; border-radius:8px; display:flex; gap:24px; flex-wrap:wrap; margin-bottom:20px;">';
+        $html .= '<div><span style="color:#9ca3af; font-size:12px;">No. Pengembalian</span><br><strong style="font-size:16px;">' . e($record->nomor_pengembalian) . '</strong></div>';
+        $html .= '<div><span style="color:#9ca3af; font-size:12px;">Peminjam</span><br><strong>' . e($record->peminjaman->user->name ?? '-') . '</strong></div>';
+        $html .= '<div><span style="color:#9ca3af; font-size:12px;">Tgl Kembali</span><br><strong>' . Carbon::parse($record->tanggal_kembali_real)->format('d M Y') . '</strong></div>';
+        $html .= '<div><span style="color:#9ca3af; font-size:12px;">Petugas</span><br><strong>' . e($record->petugas->name ?? '-') . '</strong></div>';
+        $html .= '<div><span style="color:#9ca3af; font-size:12px;">Status Pembayaran</span><br>';
+        $statusColor = $record->status_pembayaran === 'Lunas' ? '#22c55e' : '#ef4444';
+        $html .= '<span style="color:' . $statusColor . '; font-weight:bold;">' . str_replace('_', ' ', $record->status_pembayaran) . '</span></div>';
+        $html .= '</div>';
+
+        $html .= '<div style="display:flex; gap:20px; margin-bottom:20px;">';
+        $html .= '<div style="flex:1; background-color:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); padding:12px; border-radius:8px;">';
+        $html .= '<span style="color:#fca5a5; font-size:12px;">Denda Keterlambatan</span><br>';
+        $html .= '<strong style="color:#fecaca; font-size:16px;">Rp ' . number_format((float) $record->denda_keterlambatan, 0, ',', '.') . '</strong>';
+        $html .= '</div>';
+        $html .= '<div style="flex:1; background-color:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); padding:12px; border-radius:8px;">';
+        $html .= '<span style="color:#fca5a5; font-size:12px;">Total Denda</span><br>';
+        $html .= '<strong style="color:#fecaca; font-size:16px;">Rp ' . number_format((float) $record->total_denda, 0, ',', '.') . '</strong>';
+        $html .= '</div>';
+        if ($record->hari_terlambat > 0) {
+            $html .= '<div style="flex:1; background-color:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); padding:12px; border-radius:8px;">';
+            $html .= '<span style="color:#9ca3af; font-size:12px;">Terlambat</span><br>';
+            $html .= '<strong>' . $record->hari_terlambat . ' Hari</strong>';
+            $html .= '</div>';
+        }
+        $html .= '</div>';
+
+        $html .= '<div style="border:1px solid rgba(255,255,255,0.1); border-radius:8px; overflow:hidden;">';
+        $html .= '<div style="background-color:rgba(255,255,255,0.05); padding:10px 16px; font-weight:600; font-size:13px; color:#d1d5db;">Detail Barang Dikembalikan</div>';
+        $html .= '<table style="width:100%; border-collapse:collapse;">';
+        $html .= '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.05); text-align:left; background-color:rgba(0,0,0,0.2);">';
+        $html .= '<th style="padding:10px 16px; color:#9ca3af; font-weight:500; font-size:12px;">Alat</th>';
+        $html .= '<th style="padding:10px 16px; color:#9ca3af; font-weight:500; font-size:12px; text-align:center;">Kondisi</th>';
+        $html .= '<th style="padding:10px 16px; color:#9ca3af; font-weight:500; font-size:12px; text-align:right;">Denda Item</th>';
+        $html .= '</tr></thead><tbody>';
+
+        foreach ($record->details as $detail) {
+            $html .= '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+
+            $html .= '<td style="padding:12px 16px;">';
+            $html .= '<div style="font-weight:600;">' . e($detail->alat->nama_alat) . '</div>';
+            $html .= '<div style="font-size:11px; color:#6b7280;">' . $detail->jumlah_kembali . ' Unit</div>';
+            if ($detail->catatan_kondisi) {
+                $html .= '<div style="font-size:11px; color:#f87171; margin-top:2px;">Note: ' . e($detail->catatan_kondisi) . '</div>';
+            }
+            $html .= '</td>';
+
+            $kondisiColor = match ($detail->kondisi_kembali) {
+                'Baik' => '#22c55e',
+                'Rusak' => '#eab308',
+                'Hilang' => '#ef4444',
+                default => '#9ca3af'
+            };
+            $html .= '<td style="padding:12px 16px; text-align:center;">';
+            $html .= '<span style="color:' . $kondisiColor . '; font-weight:600; font-size:12px; border:1px solid ' . $kondisiColor . '; padding:2px 8px; border-radius:12px;">' . $detail->kondisi_kembali . '</span>';
+            $html .= '</td>';
+
+            $html .= '<td style="padding:12px 16px; text-align:right; font-family:monospace;">';
+            if ($detail->denda_item > 0) {
+                $html .= '<span style="color:#ef4444;">Rp ' . number_format((float) $detail->denda_item, 0, ',', '.') . '</span>';
+            } else {
+                $html .= '<span style="color:#9ca3af;">-</span>';
+            }
+            $html .= '</td>';
+
+            $html .= '</tr>';
+        }
+        $html .= '</tbody></table></div></div>';
+
+        return new HtmlString($html);
     }
 
     public static function getPages(): array

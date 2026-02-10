@@ -14,6 +14,7 @@ use App\Services\DendaService;
 use Carbon\Carbon;
 use Exception;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -27,11 +28,13 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Filament\Notifications\Notification;
 use BackedEnum;
+use Illuminate\Support\HtmlString;
 use UnitEnum;
 
 class PeminjamanResource extends Resource
@@ -64,53 +67,79 @@ class PeminjamanResource extends Resource
         return $schema
             ->components([
                 Section::make('Informasi Peminjaman')
+                    ->description('Detail peminjam & waktu.')
+                    ->icon('heroicon-m-information-circle')
                     ->schema([
                         Select::make('user_id')
                             ->label('Peminjam')
                             ->relationship('user', 'name')
                             ->searchable()
                             ->preload()
-                            ->required(),
+                            ->required()
+                            ->prefixIcon('heroicon-m-user')
+                            ->columnSpanFull(),
+
                         DatePicker::make('tanggal_pinjam')
+                            ->label('Tanggal Pinjam')
                             ->default(now())
                             ->required()
-                            ->native(false),
+                            ->native(false)
+                            ->prefixIcon('heroicon-m-calendar'),
+
                         DatePicker::make('tanggal_kembali_rencana')
                             ->label('Rencana Kembali')
                             ->required()
                             ->native(false)
-                            ->after('tanggal_pinjam'),
-                        Textarea::make('keperluan')
-                            ->required()
-                            ->columnSpanFull(),
-                    ])->columns(2),
+                            ->after('tanggal_pinjam')
+                            ->prefixIcon('heroicon-m-calendar-days'),
 
-                Section::make('Barang yang Dipinjam')
+                        Textarea::make('keperluan')
+                            ->label('Keperluan Peminjaman')
+                            ->required()
+                            ->rows(4)
+                            ->placeholder('Jelaskan keperluan peminjaman secara singkat...')
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+
+                Section::make('Daftar Barang')
+                    ->description('Item yang akan dipinjam oleh user.')
+                    ->icon('heroicon-m-shopping-bag')
                     ->schema([
                         Repeater::make('peminjamanDetails')
                             ->relationship()
                             ->schema([
                                 Select::make('alat_id')
-                                    ->label('Alat')
+                                    ->label('Nama Alat')
                                     ->options(Alat::where('stok', '>', 0)->pluck('nama_alat', 'id'))
                                     ->searchable()
+                                    ->preload()
                                     ->required()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                     ->live()
+                                    ->prefixIcon('heroicon-m-wrench')
                                     ->afterStateUpdated(function ($state, Set $set) {
                                         $stok = Alat::find($state)?->stok ?? 0;
                                         $set('max_stok', $stok);
-                                    }),
+                                    })
+                                    ->columnSpan(2),
                                 TextInput::make('jumlah')
+                                    ->label('Qty')
                                     ->numeric()
                                     ->default(1)
                                     ->minValue(1)
                                     ->maxValue(fn(Get $get) => $get('max_stok') ?? 100)
-                                    ->required(),
+                                    ->required()
+                                    ->prefixIcon('heroicon-m-hashtag')
+                                    ->columnSpan(1),
                                 Hidden::make('max_stok'),
                             ])
                             ->minItems(1)
-                            ->columns(2)
+                            ->columns(3)
+                            ->itemLabel(fn(array $state): ?string => Alat::find($state['alat_id'] ?? null)?->nama_alat ?? null)
+                            ->collapsible()
+                            ->cloneable()
+                            ->addActionLabel('Tambah Item Lain'),
                     ]),
             ]);
     }
@@ -158,7 +187,7 @@ class PeminjamanResource extends Resource
                             $html .= '</tr>';
                         }
                         $html .= '</tbody></table></div></div>';
-                        return new \Illuminate\Support\HtmlString($html);
+                        return new HtmlString($html);
                     })
                     ->modalIcon('heroicon-o-check-circle')
                     ->modalSubmitActionLabel('Ya, Setujui')
@@ -420,7 +449,13 @@ class PeminjamanResource extends Resource
                             ->success()
                             ->send();
                     }),
-                ViewAction::make(),
+                ViewAction::make()
+                    ->label('View')
+                    ->icon('heroicon-o-eye')
+                    ->modalWidth('4xl')
+                    ->modalContent(fn(Peminjaman $record) => self::renderViewContent($record))
+                    ->modalHeading('Detail Peminjaman'),
+                EditAction::make(),
                 DeleteAction::make(),
             ]);
     }
@@ -445,6 +480,46 @@ class PeminjamanResource extends Resource
             'create' => CreatePeminjaman::route('/create'),
             'edit' => EditPeminjaman::route('/{record}/edit'),
         ];
+    }
+
+    protected static function renderViewContent(Peminjaman $record): HtmlString
+    {
+        $record->load('peminjamanDetails.alat', 'user', 'approvedBy');
+        $html = '<div style="font-size:14px; line-height:1.7;">';
+        $html .= '<div style="background-color:rgba(255,255,255,0.03); padding:16px; border-radius:8px; display:flex; gap:24px; flex-wrap:wrap; margin-bottom:20px;">';
+        $html .= '<div><span style="color:#9ca3af; font-size:12px;">No. Peminjaman</span><br><strong style="font-size:16px;">' . e($record->nomor_peminjaman) . '</strong></div>';
+        $html .= '<div><span style="color:#9ca3af; font-size:12px;">Peminjam</span><br><strong>' . e($record->user->name) . '</strong></div>';
+        $html .= '<div><span style="color:#9ca3af; font-size:12px;">Status</span><br>' . $record->status->name . '</div>';
+        $html .= '<div><span style="color:#9ca3af; font-size:12px;">Tanggal Pinjam</span><br><strong>' . Carbon::parse($record->tanggal_pinjam)->format('d M Y') . '</strong></div>';
+        $html .= '<div><span style="color:#9ca3af; font-size:12px;">Rencana Kembali</span><br><strong>' . Carbon::parse($record->tanggal_kembali_rencana)->format('d M Y') . '</strong></div>';
+        if ($record->approvedBy) {
+            $html .= '<div><span style="color:#9ca3af; font-size:12px;">Disetujui Oleh</span><br><strong>' . e($record->approvedBy->name) . '</strong></div>';
+        }
+        $html .= '</div>';
+
+        $html .= '<div style="margin-bottom:20px;">';
+        $html .= '<span style="color:#9ca3af; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Keperluan</span>';
+        $html .= '<p style="margin-top:4px; font-style:italic;">' . nl2br(e($record->keperluan ?? '-')) . '</p>';
+        $html .= '</div>';
+
+        $html .= '<div style="border:1px solid rgba(255,255,255,0.1); border-radius:8px; overflow:hidden;">';
+        $html .= '<div style="background-color:rgba(255,255,255,0.05); padding:10px 16px; font-weight:600; font-size:13px; color:#d1d5db;">Barang yang Dipinjam</div>';
+        $html .= '<table style="width:100%; border-collapse:collapse;">';
+        $html .= '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.05); text-align:left; background-color:rgba(0,0,0,0.2);">';
+        $html .= '<th style="padding:10px 16px; color:#9ca3af; font-weight:500; font-size:12px;">Alat</th>';
+        $html .= '<th style="padding:10px 16px; color:#9ca3af; font-weight:500; font-size:12px; text-align:right;">Jumlah</th>';
+        $html .= '</tr></thead><tbody>';
+        foreach ($record->peminjamanDetails as $detail) {
+            $html .= '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+            $html .= '<td style="padding:12px 16px;">';
+            $html .= '<div style="font-weight:600;">' . e($detail->alat->nama_alat) . '</div>';
+            $html .= '<div style="font-size:11px; color:#6b7280;">' . e($detail->alat->merk ?? '') . '</div>';
+            $html .= '</td>';
+            $html .= '<td style="padding:12px 16px; text-align:right; font-weight:600;">' . $detail->jumlah . ' Unit</td>';
+            $html .= '</tr>';
+        }
+        $html .= '</tbody></table></div></div>';
+        return new HtmlString($html);
     }
 }
 
