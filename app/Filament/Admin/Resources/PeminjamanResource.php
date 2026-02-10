@@ -305,6 +305,7 @@ class PeminjamanResource extends Resource
 
                                         Select::make('kondisi_kembali')
                                             ->label('Kondisi')
+                                            ->native(false)
                                             ->options([
                                                 'Baik' => '✅ Baik (Denda 0)',
                                                 'Rusak' => '⚠️ Rusak (50% harga)',

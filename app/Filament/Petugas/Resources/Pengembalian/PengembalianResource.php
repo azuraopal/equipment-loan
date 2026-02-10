@@ -100,6 +100,7 @@ class PengembalianResource extends Resource
                                     ->afterStateUpdated(fn(Set $set, Get $get) => self::hitungDendaPerItem($set, $get)),
 
                                 Select::make('kondisi_kembali')
+                                    ->native(false)
                                     ->options([
                                         'Baik' => 'Baik (Denda 0)',
                                         'Rusak' => 'Rusak (50% harga)',

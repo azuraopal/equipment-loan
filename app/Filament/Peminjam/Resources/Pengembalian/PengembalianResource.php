@@ -14,6 +14,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use BackedEnum;
@@ -84,12 +85,19 @@ class PengembalianResource extends Resource
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
                         'Lunas' => 'success',
-                        default => 'warning', 
+                        default => 'warning',
                     }),
                 TextColumn::make('total_denda')->money('IDR'),
             ])
             ->actions([
                 ViewAction::make(),
+                Action::make('bayar_denda')
+                    ->label('Bayar Denda')
+                    ->icon('heroicon-o-currency-dollar')
+                    ->color('danger')
+                    ->url(fn(Pengembalian $record) => route('payment.show', $record))
+                    ->openUrlInNewTab(false)
+                    ->visible(fn(Pengembalian $record) => $record->status_pembayaran === 'Belum_Lunas' && $record->total_denda > 0),
             ]);
     }
 

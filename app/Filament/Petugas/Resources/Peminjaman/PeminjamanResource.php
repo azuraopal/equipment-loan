@@ -3,7 +3,6 @@
 namespace App\Filament\Petugas\Resources\Peminjaman;
 
 use App\Filament\Petugas\Resources\Peminjaman\Pages\ListPeminjaman;
-use App\Models\Alat;
 use App\Models\Peminjaman;
 use App\Enums\PeminjamanStatus;
 use App\Models\Pengembalian;
@@ -18,7 +17,6 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -29,6 +27,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Filament\Notifications\Notification;
 use BackedEnum;
+use Illuminate\Support\HtmlString;
 
 class PeminjamanResource extends Resource
 {
@@ -93,7 +92,7 @@ class PeminjamanResource extends Resource
                             $html .= '</tr>';
                         }
                         $html .= '</tbody></table></div></div>';
-                        return new \Illuminate\Support\HtmlString($html);
+                        return new HtmlString($html);
                     })
                     ->modalIcon('heroicon-o-check-circle')
                     ->modalSubmitActionLabel('Ya, Setujui')
@@ -211,10 +210,11 @@ class PeminjamanResource extends Resource
 
                                         Select::make('kondisi_kembali')
                                             ->label('Kondisi')
+                                            ->native(false)
                                             ->options([
-                                                'Baik' => '✅ Baik (Denda 0)',
-                                                'Rusak' => '⚠️ Rusak (50% harga)',
-                                                'Hilang' => '❌ Hilang (100% + Admin Rp25rb)',
+                                                'Baik' => 'Baik',
+                                                'Rusak' => 'Rusak',
+                                                'Hilang' => 'Hilang',
                                             ])
                                             ->required()
                                             ->default('Baik')
@@ -279,9 +279,10 @@ class PeminjamanResource extends Resource
 
                                 Select::make('status_pembayaran')
                                     ->label('Status Pembayaran')
+                                    ->native(false)
                                     ->options([
-                                        'Belum_Lunas' => '🔴 Belum Lunas',
-                                        'Lunas' => '🟢 Lunas',
+                                        'Belum_Lunas' => 'Belum Lunas',
+                                        'Lunas' => 'Lunas',
                                     ])
                                     ->default('Belum_Lunas')
                                     ->prefixIcon('heroicon-m-credit-card'),
