@@ -28,7 +28,7 @@ class PengembalianResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
 
-    protected static ?string $navigationLabel = 'Riwayat Pengembalian';
+    protected static ?string $navigationLabel = 'Pengembalian';
     protected static string|UnitEnum|null $navigationGroup = 'Transaksi';
     protected static ?string $pluralModelLabel = 'Pengembalian';
 
