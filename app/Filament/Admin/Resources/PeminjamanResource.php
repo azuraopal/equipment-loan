@@ -522,4 +522,3 @@ class PeminjamanResource extends Resource
         return new HtmlString($html);
     }
 }
-

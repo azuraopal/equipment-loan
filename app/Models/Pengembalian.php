@@ -35,6 +35,11 @@ class Pengembalian extends Model
         return $this->belongsTo(User::class, 'verified_by');
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     public function details(): HasMany
     {
         return $this->hasMany(PengembalianDetail::class);
