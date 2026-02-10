@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Peminjaman\Pages;
 
+use App\Enums\PeminjamanStatus;
 use App\Filament\Admin\Resources\PeminjamanResource;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -9,8 +10,11 @@ class CreatePeminjaman extends CreateRecord
 {
     protected static string $resource = PeminjamanResource::class;
 
-    protected function getRedirectUrl(): string
+    protected function mutateFormDataBeforeCreate(array $data): array
     {
-        return $this->getResource()::getUrl('index');
+        $data['nomor_peminjaman'] = 'P-' . time();
+        $data['status'] = PeminjamanStatus::Menunggu;
+
+        return $data;
     }
 }
