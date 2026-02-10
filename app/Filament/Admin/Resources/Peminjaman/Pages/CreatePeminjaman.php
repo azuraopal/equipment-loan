@@ -8,4 +8,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreatePeminjaman extends CreateRecord
 {
     protected static string $resource = PeminjamanResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }
