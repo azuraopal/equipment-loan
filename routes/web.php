@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -35,9 +37,9 @@ Route::get('/login', function () {
 })->name('login');
 
 Route::middleware(['auth'])->prefix('admin/laporan')->group(function () {
-    Route::get('/peminjaman', [\App\Http\Controllers\LaporanController::class, 'peminjaman'])->name('laporan.peminjaman');
-    Route::get('/pengembalian', [\App\Http\Controllers\LaporanController::class, 'pengembalian'])->name('laporan.pengembalian');
-    Route::get('/inventaris', [\App\Http\Controllers\LaporanController::class, 'inventaris'])->name('laporan.inventaris');
+    Route::get('/peminjaman', [LaporanController::class, 'peminjaman'])->name('laporan.peminjaman');
+    Route::get('/pengembalian', [LaporanController::class, 'pengembalian'])->name('laporan.pengembalian');
+    Route::get('/inventaris', [LaporanController::class, 'inventaris'])->name('laporan.inventaris');
 });
 
-Route::middleware(['auth'])->get('/payment/{pengembalian}', [\App\Http\Controllers\PaymentController::class, 'showPayment'])->name('payment.show');
+Route::middleware(['auth'])->get('/payment/{pengembalian}', [PaymentController::class, 'showPayment'])->name('payment.show');
