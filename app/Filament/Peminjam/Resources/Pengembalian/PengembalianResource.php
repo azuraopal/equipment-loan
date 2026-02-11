@@ -31,8 +31,9 @@ class PengembalianResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-archive-box-arrow-down';
 
-    protected static ?string $navigationLabel = 'Kembalikan Alat';
-    protected static ?string $pluralModelLabel = 'Kembalikan Alat';
+    protected static ?string $navigationLabel = 'Pengembalian & Denda';
+    protected static ?string $pluralModelLabel = 'Pengembalian & Denda';
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $slug = 'pengembalian';
 

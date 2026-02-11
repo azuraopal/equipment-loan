@@ -46,6 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->brandName('EquipLoan')
             ->login(Login::class)
             ->authGuard('web')
             ->databaseNotifications()
@@ -56,7 +57,10 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Admin/Resources/Pages'), for: 'App\Filament\Admin\Resources\Pages')
             ->pages([
                 Dashboard::class,
-                UserResource::class,
+            ])
+            ->navigationGroups([
+                'Master Data',
+                'Transaksi',
             ])
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\Filament\Admin\Widgets')
             ->widgets([])

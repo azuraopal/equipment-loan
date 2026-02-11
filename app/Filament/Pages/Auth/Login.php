@@ -9,10 +9,30 @@ use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Filament\Auth\Pages\Login as BaseLogin;
 use Filament\Facades\Filament;
 use Illuminate\Auth\SessionGuard;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 
 class Login extends BaseLogin
 {
+    public function render(): View
+    {
+        return view('filament.pages.auth.login')
+            ->layout('filament-panels::components.layout.base', [
+                'livewire' => $this,
+            ]);
+    }
+
+    public function getHeading(): string|Htmlable|null
+    {
+        return null;
+    }
+
+    public function getSubheading(): string|Htmlable|null
+    {
+        return null;
+    }
+
     public function authenticate(): ?LoginResponse
     {
         try {

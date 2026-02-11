@@ -12,16 +12,22 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Actions\EditAction;
-use Filament\Tables\Columns\IconColumn;
+use Filament\Actions\ViewAction;
+use Filament\Actions\DeleteAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use BackedEnum;
+use UnitEnum;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-users';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Master Data';
+
+    protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
     {
@@ -62,7 +68,9 @@ class UserResource extends Resource
                 TextColumn::make('role')->badge(),
             ])
             ->actions([
+                ViewAction::make(),
                 EditAction::make(),
+                DeleteAction::make(),
             ]);
     }
 
