@@ -17,17 +17,10 @@ class PaymentService
         Config::$isProduction = config('services.midtrans.is_production');
         Config::$isSanitized = config('services.midtrans.is_sanitized');
         Config::$is3ds = config('services.midtrans.is_3ds');
-
-        \Log::debug('PaymentService initialized');
     }
 
     public function createPayment(Pengembalian $pengembalian)
     {
-        \Log::debug('PaymentService::createPayment called', [
-            'pengembalian_id' => $pengembalian->id,
-            'status_pembayaran' => $pengembalian->status_pembayaran,
-        ]);
-
         /** @var Payment|null $pendingPayment */
         $pendingPayment = $pengembalian->payments()->where('status', 'pending')->latest()->first();
 
