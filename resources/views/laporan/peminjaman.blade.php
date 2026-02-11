@@ -5,6 +5,11 @@
     <meta charset="utf-8">
     <title>Laporan Peminjaman</title>
     <style>
+        @page {
+            size: A4 landscape;
+            margin: 15mm;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,12 +19,13 @@
         body {
             font-family: 'Segoe UI', Tahoma, sans-serif;
             color: #111;
-            font-size: 11px;
+            font-size: 12px;
         }
 
         .header {
             padding: 24px 30px 16px;
             border-bottom: 2px solid #111;
+            position: relative;
         }
 
         .header h1 {
@@ -34,27 +40,34 @@
         }
 
         .header .meta {
-            float: right;
+            position: absolute;
+            top: 24px;
+            right: 30px;
             text-align: right;
             font-size: 9px;
             color: #888;
-            margin-top: -30px;
         }
 
-        .stats {
-            display: flex;
-            gap: 24px;
-            padding: 12px 30px;
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
             background: #f9f9f9;
             border-bottom: 1px solid #e0e0e0;
         }
 
-        .stat .num {
-            font-size: 16px;
-            font-weight: 700;
+        .stats-table td {
+            padding: 12px 16px;
+            text-align: center;
+            border: none;
         }
 
-        .stat .lbl {
+        .stats-table .num {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111;
+        }
+
+        .stats-table .lbl {
             font-size: 8px;
             color: #888;
             text-transform: uppercase;
@@ -65,12 +78,12 @@
             padding: 16px 30px;
         }
 
-        table {
+        table.data {
             width: 100%;
             border-collapse: collapse;
         }
 
-        thead th {
+        table.data thead th {
             background: #222;
             color: #fff;
             padding: 8px 6px;
@@ -81,13 +94,13 @@
             font-weight: 600;
         }
 
-        tbody td {
+        table.data tbody td {
             padding: 7px 6px;
             border-bottom: 1px solid #eee;
             font-size: 10px;
         }
 
-        tbody tr:nth-child(even) {
+        table.data tbody tr:nth-child(even) {
             background: #fafafa;
         }
 
@@ -146,8 +159,19 @@
             padding: 6px 30px;
             font-size: 8px;
             color: #aaa;
-            display: flex;
-            justify-content: space-between;
+        }
+
+        .footer table {
+            width: 100%;
+        }
+
+        .footer td {
+            border: none;
+            padding: 0;
+        }
+
+        .footer td:last-child {
+            text-align: right;
         }
     </style>
 </head>
@@ -159,34 +183,39 @@
         <div class="meta">
             Dicetak: {{ now()->format('d/m/Y H:i') }}<br>
             Oleh: {{ auth()->user()->name }}
+            @if($periode['dari_label'] || $periode['sampai_label'])
+                <br>Periode: {{ $periode['dari_label'] ?? '...' }} — {{ $periode['sampai_label'] ?? '...' }}
+            @endif
         </div>
     </div>
 
-    <div class="stats">
-        <div class="stat">
-            <div class="num">{{ $stats['total'] }}</div>
-            <div class="lbl">Total</div>
-        </div>
-        <div class="stat">
-            <div class="num">{{ $stats['menunggu'] }}</div>
-            <div class="lbl">Menunggu</div>
-        </div>
-        <div class="stat">
-            <div class="num">{{ $stats['disetujui'] }}</div>
-            <div class="lbl">Dipinjam</div>
-        </div>
-        <div class="stat">
-            <div class="num">{{ $stats['kembali'] }}</div>
-            <div class="lbl">Kembali</div>
-        </div>
-        <div class="stat">
-            <div class="num">{{ $stats['ditolak'] }}</div>
-            <div class="lbl">Ditolak</div>
-        </div>
-    </div>
+    <table class="stats-table">
+        <tr>
+            <td>
+                <div class="num">{{ $stats['total'] }}</div>
+                <div class="lbl">Total</div>
+            </td>
+            <td>
+                <div class="num">{{ $stats['menunggu'] }}</div>
+                <div class="lbl">Menunggu</div>
+            </td>
+            <td>
+                <div class="num">{{ $stats['disetujui'] }}</div>
+                <div class="lbl">Dipinjam</div>
+            </td>
+            <td>
+                <div class="num">{{ $stats['kembali'] }}</div>
+                <div class="lbl">Kembali</div>
+            </td>
+            <td>
+                <div class="num">{{ $stats['ditolak'] }}</div>
+                <div class="lbl">Ditolak</div>
+            </td>
+        </tr>
+    </table>
 
     <div class="content">
-        <table>
+        <table class="data">
             <thead>
                 <tr>
                     <th style="width:4%">No</th>
@@ -236,8 +265,12 @@
     </div>
 
     <div class="footer">
-        <span>Equipment Loan Management System</span>
-        <span>Halaman 1</span>
+        <table>
+            <tr>
+                <td>Equipment Loan Management System</td>
+                <td>Halaman 1</td>
+            </tr>
+        </table>
     </div>
 </body>
 
