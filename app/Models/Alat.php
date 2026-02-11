@@ -3,11 +3,12 @@ namespace App\Models;
 
 use App\Traits\MencatatAktivitas;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Str;
 
 class Alat extends Model
 {
-    use MencatatAktivitas;
+    use HasFactory, MencatatAktivitas;
     protected $guarded = [];
 
     protected $fillable = [

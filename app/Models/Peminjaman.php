@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PeminjamanStatus;
 use App\Traits\MencatatAktivitas;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * @property int $id
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Peminjaman extends Model
 {
-    use MencatatAktivitas;
+    use HasFactory, MencatatAktivitas;
 
     protected $table = 'peminjamans';
 
