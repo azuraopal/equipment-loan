@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Peminjaman;
 use App\Models\Pengembalian;
 use Auth;
+use Carbon\Carbon;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
@@ -20,6 +21,7 @@ use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Midtrans\Config;
 use Midtrans\Transaction;
 
@@ -146,7 +148,7 @@ class PengembalianResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn(\Illuminate\Database\Eloquent\Builder $query) => $query->whereHas('peminjaman', function ($q) {
+            ->modifyQueryUsing(fn(Builder $query) => $query->whereHas('peminjaman', function ($q) {
                 $q->where('user_id', Auth::id());
             }))
             ->columns([
@@ -238,11 +240,11 @@ class PengembalianResource extends Resource
                             ->icon('heroicon-o-calendar-days')
                             ->getStateUsing(function (Pengembalian $record): string {
                                 if ($record->tanggal_bayar) {
-                                    return \Carbon\Carbon::parse($record->tanggal_bayar)->format('d F Y');
+                                    return Carbon::parse($record->tanggal_bayar)->format('d F Y');
                                 }
                                 $payment = self::getPaymentWithDetails($record);
                                 if ($payment && $payment->transaction_time) {
-                                    return \Carbon\Carbon::parse($payment->transaction_time)->format('d F Y');
+                                    return Carbon::parse($payment->transaction_time)->format('d F Y');
                                 }
                                 return 'Belum dibayar';
                             }),

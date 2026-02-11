@@ -2,35 +2,30 @@
 
 namespace App\Filament\Petugas\Resources\Pengembalian;
 
-use App\Filament\Petugas\Resources\Pengembalian\Pages\EditPengembalian;
 use App\Filament\Petugas\Resources\Pengembalian\Pages\ListPengembalian;
-use App\Models\Alat;
+use App\Models\Payment;
 use App\Models\Pengembalian;
-use App\Services\DendaService;
 use Auth;
-use Filament\Actions\EditAction;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
+use Carbon\Carbon;
+use Filament\Actions\ViewAction;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use BackedEnum;
+use Midtrans\Config;
+use Midtrans\Transaction;
 
 class PengembalianResource extends Resource
 {
     protected static ?string $model = Pengembalian::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-check-badge';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-eye';
 
-    protected static ?string $navigationLabel = 'Verifikasi Pengembalian';
-    protected static ?string $pluralModelLabel = 'Verifikasi Pengembalian';
+    protected static ?string $navigationLabel = 'Pantau Pengembalian';
+    protected static ?string $pluralModelLabel = 'Pantau Pengembalian';
 
     public static function canCreate(): bool
     {
@@ -38,7 +33,7 @@ class PengembalianResource extends Resource
     }
     public static function canEdit($record): bool
     {
-        return true;
+        return false;
     }
     public static function canDelete($record): bool
     {
@@ -47,111 +42,71 @@ class PengembalianResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema
-            ->schema([
-                Section::make('Verifikasi Petugas')
-                    ->schema([
-                        Select::make('petugas_id')
-                            ->label('Diterima Oleh')
-                            ->relationship('petugas', 'name')
-                            ->default(Auth::id())
-                            ->disabled()
-                            ->dehydrated(),
+        return $schema->schema([]);
+    }
 
-                        DatePicker::make('tanggal_kembali_real')
-                            ->label('Tanggal Terima Fisik')
-                            ->required()
-                            ->native(false)
-                            ->default(now()),
-                    ])->columns(2),
+    private static function formatPaymentType(?string $type): string
+    {
+        if (!$type) {
+            return 'Tidak diketahui';
+        }
 
-                Section::make('Cek Kondisi Barang')
-                    ->description('Sistem akan menghitung denda otomatis berdasarkan kondisi (Hilang=100%, Rusak=50%).')
-                    ->schema([
-                        Repeater::make('details')
-                            ->relationship()
-                            ->live()
-                            ->schema([
-                                Select::make('alat_id')
-                                    ->relationship('alat', 'nama_alat')
-                                    ->required()
-                                    ->searchable()
-                                    ->preload()
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, Set $set, Get $get) {
-                                        $alat = Alat::find($state);
-                                        $harga = $alat ? $alat->harga_satuan : 0;
+        return match ($type) {
+            'qris' => 'QRIS',
+            'bank_transfer' => 'Transfer Bank',
+            'credit_card' => 'Kartu Kredit',
+            'cstore' => 'Convenience Store',
+            'echannel' => 'Mandiri Bill',
+            'gopay' => 'GoPay',
+            'shopeepay' => 'ShopeePay',
+            default => strtoupper(str_replace('_', ' ', $type)),
+        };
+    }
 
-                                        $set('harga_temp', $harga);
+    private static function getPaymentWithDetails(Pengembalian $record): ?Payment
+    {
+        /** @var Payment|null $payment */
+        $payment = $record->payments()->where('status', 'success')->latest()->first()
+            ?? $record->payments()->latest()->first();
 
-                                        self::hitungDendaPerItem($set, $get);
-                                    }),
+        if (!$payment) {
+            return null;
+        }
 
-                                Hidden::make('harga_temp')
-                                    ->default(0)
-                                    ->dehydrated(false),
+        if ($payment->order_id && !$payment->payment_type) {
+            try {
+                Config::$serverKey = config('services.midtrans.server_key');
+                Config::$isProduction = config('services.midtrans.is_production');
+                Config::$isSanitized = config('services.midtrans.is_sanitized');
+                Config::$is3ds = config('services.midtrans.is_3ds');
 
-                                TextInput::make('jumlah_kembali')
-                                    ->numeric()
-                                    ->required()
-                                    ->default(1)
-                                    ->minValue(1)
-                                    ->reactive()
-                                    ->afterStateUpdated(fn(Set $set, Get $get) => self::hitungDendaPerItem($set, $get)),
+                /** @var object $status */
+                $status = Transaction::status($payment->order_id);
 
-                                Select::make('kondisi_kembali')
-                                    ->native(false)
-                                    ->options([
-                                        'Baik' => 'Baik (Denda 0)',
-                                        'Rusak' => 'Rusak (50% harga)',
-                                        'Hilang' => 'Hilang (100% + Admin Rp25rb)',
-                                    ])
-                                    ->required()
-                                    ->reactive()
-                                    ->afterStateUpdated(fn(Set $set, Get $get) => self::hitungDendaPerItem($set, $get)),
+                $paymentType = $status->payment_type ?? null;
+                $transactionTime = $status->transaction_time ?? null;
+                $transactionStatus = $status->transaction_status ?? '';
 
-                                TextInput::make('denda_item')
-                                    ->label('Denda (Auto)')
-                                    ->numeric()
-                                    ->prefix('Rp')
-                                    ->default(0)
-                                    ->readOnly()
-                                    ->dehydrated()
-                                    ->extraInputAttributes(['style' => 'background-color: #f3f4f6;']),
-                            ])
-                            ->columns(2)
-                            ->afterStateUpdated(fn(Set $set, Get $get) => self::hitungGrandTotal($set, $get)),
-                    ]),
+                $payment->update([
+                    'payment_type' => $paymentType,
+                    'transaction_time' => $transactionTime,
+                    'status' => match ($transactionStatus) {
+                        'settlement', 'capture' => 'success',
+                        'expire' => 'expired',
+                        'cancel' => 'cancelled',
+                        'deny' => 'failed',
+                        default => $payment->status,
+                    },
+                ]);
 
-                Section::make('Kalkulasi Pembayaran')
-                    ->schema([
-                        TextInput::make('denda_keterlambatan')
-                            ->label('Denda Keterlambatan')
-                            ->numeric()
-                            ->prefix('Rp')
-                            ->default(0)
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(fn(Set $set, Get $get) => self::hitungGrandTotal($set, $get)),
+                /** @var Payment $payment */
+                $payment = $payment->fresh();
+            } catch (\Exception $e) {
+                \Log::debug('Failed to fetch Midtrans status for ' . $payment->order_id . ': ' . $e->getMessage());
+            }
+        }
 
-                        TextInput::make('total_denda')
-                            ->label('Total Harus Dibayar')
-                            ->numeric()
-                            ->prefix('Rp')
-                            ->required()
-                            ->readOnly()
-                            ->default(0)
-                            ->helperText('Otomatis: Denda Keterlambatan + Total Denda Item')
-                            ->extraInputAttributes(['style' => 'font-weight: bold; font-size: 1.1em; background-color: #ecfdf5; color: #065f46;']),
-
-                        Select::make('status_pembayaran')
-                            ->options([
-                                'Belum_Lunas' => 'Belum Lunas',
-                                'Lunas' => 'Lunas',
-                            ])
-                            ->required()
-                            ->default('Belum_Lunas'),
-                    ])->columns(3),
-            ]);
+        return $payment;
     }
 
     public static function table(Table $table): Table
@@ -171,48 +126,150 @@ class PengembalianResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
-                EditAction::make()->label('Verifikasi'),
+                ViewAction::make()
+                    ->modalHeading('Detail Pengembalian')
+                    ->modalWidth('3xl')
+                    ->infolist([
+                        TextEntry::make('nomor_pengembalian')
+                            ->label('Nomor Pengembalian')
+                            ->icon('heroicon-o-document-text')
+                            ->weight('bold')
+                            ->columnSpanFull(),
+
+                        TextEntry::make('peminjaman.nomor_peminjaman')
+                            ->label('Nomor Peminjaman')
+                            ->icon('heroicon-o-clipboard-document'),
+
+                        TextEntry::make('peminjaman.user.name')
+                            ->label('Peminjam')
+                            ->icon('heroicon-o-user'),
+
+                        TextEntry::make('tanggal_kembali_real')
+                            ->label('Tanggal Pengembalian')
+                            ->date('d F Y')
+                            ->icon('heroicon-o-calendar'),
+
+                        TextEntry::make('hari_terlambat')
+                            ->label('Hari Terlambat')
+                            ->suffix(' hari')
+                            ->icon('heroicon-o-clock')
+                            ->color(fn($state) => $state > 0 ? 'danger' : 'success'),
+
+                        TextEntry::make('catatan_pengembalian')
+                            ->label('Catatan')
+                            ->icon('heroicon-o-chat-bubble-left-ellipsis')
+                            ->placeholder('Tidak ada catatan')
+                            ->columnSpanFull(),
+
+                        TextEntry::make('denda_separator')
+                            ->label('── Rincian Denda ──')
+                            ->default('')
+                            ->columnSpanFull(),
+
+                        TextEntry::make('denda_keterlambatan')
+                            ->label('Denda Keterlambatan')
+                            ->money('IDR')
+                            ->icon('heroicon-o-clock'),
+
+                        TextEntry::make('denda_kerusakan')
+                            ->label('Denda Kerusakan')
+                            ->money('IDR')
+                            ->icon('heroicon-o-wrench'),
+
+                        TextEntry::make('denda_kehilangan')
+                            ->label('Denda Kehilangan')
+                            ->money('IDR')
+                            ->icon('heroicon-o-exclamation-triangle'),
+
+                        TextEntry::make('total_denda')
+                            ->label('Total Denda')
+                            ->money('IDR')
+                            ->weight('bold')
+                            ->color('danger')
+                            ->icon('heroicon-o-banknotes'),
+
+                        TextEntry::make('payment_separator')
+                            ->label('── Informasi Pembayaran ──')
+                            ->default('')
+                            ->columnSpanFull(),
+
+                        TextEntry::make('status_pembayaran')
+                            ->label('Status Pembayaran')
+                            ->badge()
+                            ->color(fn(string $state): string => match ($state) {
+                                'Lunas' => 'success',
+                                default => 'warning',
+                            }),
+
+                        TextEntry::make('tanggal_bayar_display')
+                            ->label('Tanggal Bayar')
+                            ->icon('heroicon-o-calendar-days')
+                            ->getStateUsing(function (Pengembalian $record): string {
+                                if ($record->tanggal_bayar) {
+                                    return Carbon::parse($record->tanggal_bayar)->format('d F Y');
+                                }
+                                $payment = self::getPaymentWithDetails($record);
+                                if ($payment && $payment->transaction_time) {
+                                    return Carbon::parse($payment->transaction_time)->format('d F Y');
+                                }
+                                return 'Belum dibayar';
+                            }),
+
+                        TextEntry::make('payment_method')
+                            ->label('Metode Pembayaran')
+                            ->icon('heroicon-o-credit-card')
+                            ->getStateUsing(function (Pengembalian $record): string {
+                                $payment = self::getPaymentWithDetails($record);
+                                return $payment ? self::formatPaymentType($payment->payment_type) : 'Belum ada pembayaran';
+                            }),
+
+                        TextEntry::make('payment_time')
+                            ->label('Waktu Transaksi')
+                            ->icon('heroicon-o-clock')
+                            ->getStateUsing(function (Pengembalian $record): string {
+                                $payment = self::getPaymentWithDetails($record);
+                                if ($payment && $payment->transaction_time) {
+                                    return $payment->transaction_time->format('d F Y, H:i:s');
+                                }
+                                return 'Belum ada transaksi';
+                            }),
+
+                        RepeatableEntry::make('details')
+                            ->label('Detail Barang Dikembalikan')
+                            ->columnSpanFull()
+                            ->schema([
+                                TextEntry::make('alat.nama_alat')
+                                    ->label('Nama Alat'),
+
+                                TextEntry::make('jumlah_kembali')
+                                    ->label('Jumlah'),
+
+                                TextEntry::make('kondisi_kembali')
+                                    ->label('Kondisi')
+                                    ->badge()
+                                    ->color(fn(string $state): string => match ($state) {
+                                        'Baik' => 'success',
+                                        'Rusak' => 'warning',
+                                        'Hilang' => 'danger',
+                                        default => 'gray',
+                                    }),
+
+                                TextEntry::make('catatan_kondisi')
+                                    ->label('Catatan')
+                                    ->placeholder('-'),
+
+                                TextEntry::make('denda_item')
+                                    ->label('Denda')
+                                    ->money('IDR'),
+                            ]),
+                    ]),
             ]);
-    }
-
-    public static function hitungDendaPerItem(Set $set, Get $get)
-    {
-        $harga = (float) $get('harga_temp');
-        if ($harga == 0 && $get('alat_id')) {
-            $alat = Alat::find($get('alat_id'));
-            $harga = $alat ? $alat->harga_satuan : 0;
-            $set('harga_temp', $harga);
-        }
-
-        $jumlah = (int) $get('jumlah_kembali');
-        $kondisi = $get('kondisi_kembali');
-
-        $denda = DendaService::hitungDendaItem($kondisi ?? 'Baik', $harga, $jumlah);
-
-        $set('denda_item', $denda);
-    }
-
-    public static function hitungGrandTotal(Set $set, Get $get)
-    {
-        $items = $get('details');
-        $totalDendaItem = 0;
-
-        if (is_array($items)) {
-            foreach ($items as $item) {
-                $totalDendaItem += (float) ($item['denda_item'] ?? 0);
-            }
-        }
-
-        $dendaTelat = (float) $get('denda_keterlambatan');
-
-        $set('total_denda', $totalDendaItem + $dendaTelat);
     }
 
     public static function getPages(): array
     {
         return [
             'index' => ListPengembalian::route('/'),
-            'edit' => EditPengembalian::route('/{record}/create'),
         ];
     }
 }
