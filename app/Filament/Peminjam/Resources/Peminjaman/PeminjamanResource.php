@@ -50,15 +50,17 @@ class PeminjamanResource extends Resource
                         Textarea::make('keperluan')
                             ->required(),
                     ]),
-                Section::make('Barang')
+                Section::make('Peminjaman')
                     ->schema([
                         Repeater::make('peminjamanDetails')
+                            ->label('Barang')
                             ->relationship()
                             ->schema([
                                 Select::make('alat_id')
                                     ->label('Alat')
                                     ->options(Alat::where('stok', '>', 0)->pluck('nama_alat', 'id'))
                                     ->searchable()
+                                    ->live()
                                     ->required()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                                 TextInput::make('jumlah')
@@ -67,7 +69,11 @@ class PeminjamanResource extends Resource
                                     ->minValue(1)
                                     ->required(),
                             ])
+                            ->columns(1)
+                            ->itemLabel(fn(array $state): ?string => $state['alat_id'] ? Alat::find($state['alat_id'])?->nama_alat : null)
+                            ->addActionLabel('Tambah Barang')
                             ->minItems(1)
+                            ->defaultItems(1)
                     ]),
             ]);
     }
