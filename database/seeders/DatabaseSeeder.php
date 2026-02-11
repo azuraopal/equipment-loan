@@ -9,101 +9,194 @@ use App\Models\Kategori;
 use App\Models\Alat;
 use App\Models\Peminjaman;
 use App\Models\PeminjamanAlat;
+use App\Models\Pengembalian;
+use App\Models\PengembalianDetail;
+use App\Models\Payment;
 use App\Enums\UserRole;
 use App\Enums\PeminjamanStatus;
+use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $admin = User::create([
+        Schema::disableForeignKeyConstraints();
+
+        $this->command->info('Truncating tables...');
+        User::truncate();
+        Kategori::truncate();
+        Alat::truncate();
+        Peminjaman::truncate();
+        PeminjamanAlat::truncate();
+        Pengembalian::truncate();
+        PengembalianDetail::truncate();
+        Payment::truncate();
+
+        Schema::enableForeignKeyConstraints();
+
+        $this->command->info('Starting Seeder...');
+        $this->command->info('Creating Users...');
+        $admin = User::firstOrCreate([
+            'email' => 'admin@test.com'
+        ], [
             'name' => 'Super Admin',
-            'email' => 'admin@test.com',
             'password' => Hash::make('password'),
             'role' => UserRole::Admin,
-            'is_active' => true,
         ]);
 
-        $petugas = User::create([
+        $petugas = User::firstOrCreate([
+            'email' => 'petugas@test.com'
+        ], [
             'name' => 'Petugas Lab',
-            'email' => 'petugas@test.com',
             'password' => Hash::make('password'),
             'role' => UserRole::Petugas,
-            'is_active' => true,
         ]);
 
-        $peminjam = User::create([
+        $member = User::firstOrCreate([
+            'email' => 'peminjam@test.com'
+        ], [
             'name' => 'Mahasiswa Santuy',
-            'email' => 'peminjam@test.com',
             'password' => Hash::make('password'),
             'role' => UserRole::Peminjam,
-            'is_active' => true,
         ]);
 
-        $katElektronik = Kategori::create(['nama_kategori' => 'Elektronik', 'deskripsi' => 'Alat-alat listrik']);
-        $katMekanik = Kategori::create(['nama_kategori' => 'Mekanik', 'deskripsi' => 'Alat pertukangan']);
-        $katAV = Kategori::create(['nama_kategori' => 'Audio Visual', 'deskripsi' => 'Kamera dan Sound']);
+        if (User::where('role', UserRole::Peminjam)->count() < 10) {
+            $this->command->info('Creating Users manually...');
+            $users = collect();
+            for ($i = 0; $i < 10; $i++) {
+                $users->push(User::create([
+                    'name' => 'User ' . $i,
+                    'email' => 'user' . $i . '@test.com',
+                    'password' => Hash::make('password'),
+                    'role' => UserRole::Peminjam,
+                ]));
+            }
+        } else {
+            $users = User::where('role', UserRole::Peminjam)->get();
+        }
 
-        $laptop = Alat::create([
-            'kategori_id' => $katElektronik->id,
-            'nama_alat' => 'Laptop Asus ROG',
-            'kode_alat' => 'LPT-001',
-            'stok' => 10,
-            'harga_satuan' => 15000000,
-            'kondisi_awal' => 'Baik',
-            'gambar' => null,
-        ]);
+        if (Kategori::count() == 0) {
+            $this->command->info('Creating Categories...');
+            $categories = Kategori::factory()->count(5)->create();
+        } else {
+            $categories = Kategori::all();
+        }
 
-        $bor = Alat::create([
-            'kategori_id' => $katMekanik->id,
-            'nama_alat' => 'Bor Listrik Bosch',
-            'kode_alat' => 'BOR-001',
-            'stok' => 2,
-            'harga_satuan' => 500000,
-            'kondisi_awal' => 'Baik',
-        ]);
+        if (Alat::count() == 0) {
+            $this->command->info('Creating Alats...');
+            $alats = Alat::factory()->count(20)->recycle($categories)->create();
+        } else {
+            $alats = Alat::all();
+        }
 
-        $kamera = Alat::create([
-            'kategori_id' => $katAV->id,
-            'nama_alat' => 'Kamera Sony Alpha',
-            'kode_alat' => 'CAM-001',
-            'stok' => 5,
-            'harga_satuan' => 25000000,
-            'kondisi_awal' => 'Baik',
-        ]);
+        if ($alats->count() > 0) {
 
-        $pinjamBaru = Peminjaman::create([
-            'user_id' => $peminjam->id,
-            'nomor_peminjaman' => 'P-WAITING-001',
-            'tanggal_pinjam' => now(),
-            'tanggal_kembali_rencana' => now()->addDays(3),
-            'status' => PeminjamanStatus::Menunggu,
-            'keperluan' => 'Praktikum Jaringan Komputer',
-        ]);
+            $this->command->info('Creating Pending Loans...');
+            $pendingLoans = Peminjaman::factory()->count(5)->create([
+                'user_id' => fn() => $users->random()->id,
+                'status' => PeminjamanStatus::Menunggu,
+                'tanggal_pinjam' => now()->addDays(1),
+                'tanggal_kembali_rencana' => now()->addDays(3),
+            ]);
+            $this->attachAlats($pendingLoans, $alats);
 
-        PeminjamanAlat::create([
-            'peminjaman_id' => $pinjamBaru->id,
-            'alat_id' => $laptop->id,
-            'jumlah' => 1,
-        ]);
+            $approvedLoans = Peminjaman::factory()->count(5)->create([
+                'user_id' => fn() => $users->random()->id,
+                'status' => PeminjamanStatus::Disetujui,
+                'approved_by' => $petugas->id,
+                'tanggal_pinjam' => now()->subDays(1),
+                'tanggal_kembali_rencana' => now()->addDays(2),
+            ]);
 
-        $kamera->decrement('stok', 1);
+            foreach ($approvedLoans as $loan) {
+                $alat = $alats->random();
+                if ($alat->isStockAvailable(1)) {
+                    $loan->alats()->attach($alat->id, ['jumlah' => 1]);
+                    $alat->decrement('stok', 1);
+                }
+            }
 
-        $pinjamAktif = Peminjaman::create([
-            'user_id' => $peminjam->id,
-            'nomor_peminjaman' => 'P-ACTIVE-002',
-            'tanggal_pinjam' => now()->subDays(1),
-            'tanggal_kembali_rencana' => now()->addDays(2),
-            'status' => PeminjamanStatus::Disetujui,
-            'keperluan' => 'Dokumentasi Event Kampus',
-            'approved_by' => $petugas->id,
-            'approved_at' => now()->subDays(1),
-        ]);
+            $rejectedLoans = Peminjaman::factory()->count(3)->create([
+                'user_id' => fn() => $users->random()->id,
+                'status' => PeminjamanStatus::Ditolak,
+                'rejected_by' => $petugas->id,
+            ]);
+            $this->attachAlats($rejectedLoans, $alats);
 
-        PeminjamanAlat::create([
-            'peminjaman_id' => $pinjamAktif->id,
-            'alat_id' => $kamera->id,
-            'jumlah' => 1,
-        ]);
+            $completedLoans = Peminjaman::factory()->count(10)->create([
+                'user_id' => fn() => $users->random()->id,
+                'status' => PeminjamanStatus::Kembali,
+                'approved_by' => $petugas->id,
+                'tanggal_pinjam' => now()->subMonth(),
+                'tanggal_kembali_rencana' => now()->subMonth()->addDays(3),
+                'tanggal_kembali_real' => now()->subMonth()->addDays(3),
+            ]);
+
+            foreach ($completedLoans as $loan) {
+                $alat = $alats->random();
+                $loan->alats()->attach($alat->id, ['jumlah' => 1]);
+
+                $pengembalian = Pengembalian::factory()->create([
+                    'peminjaman_id' => $loan->id,
+                    'petugas_id' => $petugas->id,
+                    'tanggal_kembali_real' => $loan->tanggal_kembali_real,
+                    'denda_keterlambatan' => 0,
+                    'total_denda' => 0,
+                    'status_pembayaran' => 'Lunas',
+                ]);
+
+                PengembalianDetail::create([
+                    'pengembalian_id' => $pengembalian->id,
+                    'alat_id' => $alat->id,
+                    'kondisi_kembali' => 'Baik',
+                    'jumlah_kembali' => 1,
+                ]);
+            }
+
+            $lateLoans = Peminjaman::factory()->count(5)->create([
+                'user_id' => fn() => $users->random()->id,
+                'status' => PeminjamanStatus::Kembali,
+                'approved_by' => $petugas->id,
+                'tanggal_pinjam' => now()->subMonth(),
+                'tanggal_kembali_rencana' => now()->subMonth()->addDays(3),
+                'tanggal_kembali_real' => now()->subMonth()->addDays(5),
+            ]);
+
+            foreach ($lateLoans as $loan) {
+                $alat = $alats->random();
+                $loan->alats()->attach($alat->id, ['jumlah' => 1]);
+
+                $denda = 50000;
+                $pengembalian = Pengembalian::factory()->create([
+                    'peminjaman_id' => $loan->id,
+                    'petugas_id' => $petugas->id,
+                    'tanggal_kembali_real' => $loan->tanggal_kembali_real,
+                    'denda_keterlambatan' => $denda,
+                    'total_denda' => $denda,
+                    'status_pembayaran' => 'Lunas',
+                ]);
+
+                PengembalianDetail::create([
+                    'pengembalian_id' => $pengembalian->id,
+                    'alat_id' => $alat->id,
+                    'kondisi_kembali' => 'Baik',
+                    'jumlah_kembali' => 1,
+                ]);
+
+                Payment::factory()->create([
+                    'pengembalian_id' => $pengembalian->id,
+                    'amount' => $denda,
+                    'payment_type' => 'cash',
+                    'status' => 'settlement',
+                ]);
+            }
+        }
+    }
+
+    private function attachAlats($loans, $alats)
+    {
+        foreach ($loans as $loan) {
+            $loan->alats()->attach($alats->random()->id, ['jumlah' => 1]);
+        }
     }
 }
