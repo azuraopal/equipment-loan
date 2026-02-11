@@ -28,18 +28,28 @@ class PaymentService
             'status_pembayaran' => $pengembalian->status_pembayaran,
         ]);
 
+        /** @var Payment|null $pendingPayment */
         $pendingPayment = $pengembalian->payments()->where('status', 'pending')->latest()->first();
 
         if ($pendingPayment) {
             try {
+                /** @var object $status */
                 $status = Transaction::status($pendingPayment->order_id);
+
 
                 if (in_array($status->transaction_status, ['expire', 'cancel', 'deny', 'failure'])) {
                     $pendingPayment->update(['status' => 'expired']);
                     $pendingPayment = null;
                 } elseif ($status->transaction_status == 'settlement' || $status->transaction_status == 'capture') {
-                    $pendingPayment->update(['status' => 'success']);
-                    $pengembalian->update(['status_pembayaran' => 'Lunas']);
+                    $pendingPayment->update([
+                        'status' => 'success',
+                        'payment_type' => $status->payment_type ?? null,
+                        'transaction_time' => $status->transaction_time ?? null,
+                    ]);
+                    $pengembalian->update([
+                        'status_pembayaran' => 'Lunas',
+                        'tanggal_bayar' => now(),
+                    ]);
                     return null;
                 } else {
                     return $pendingPayment->snap_token;
