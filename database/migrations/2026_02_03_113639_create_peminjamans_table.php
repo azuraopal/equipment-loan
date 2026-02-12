@@ -19,7 +19,6 @@ return new class extends Migration {
             $table->date('tanggal_kembali_real')->nullable();
             $table->string('status')->default('Menunggu');
             $table->text('keperluan')->nullable();
-            $table->text('keterangan')->nullable();
             $table->foreignId('approved_by')->nullable()->constrained('users');
             $table->timestamp('approved_at')->nullable();
             $table->foreignId('rejected_by')->nullable()->constrained('users');

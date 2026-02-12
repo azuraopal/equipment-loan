@@ -21,7 +21,6 @@ return new class extends Migration {
             $table->decimal('harga_satuan', 15, 2);
             $table->string('kondisi_awal')->default('Baik');
             $table->string('gambar')->nullable();
-            $table->string('lokasi_penyimpanan', 100)->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

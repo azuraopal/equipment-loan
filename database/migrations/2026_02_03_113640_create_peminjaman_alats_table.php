@@ -16,7 +16,6 @@ return new class extends Migration {
             $table->foreignId('alat_id')->constrained('alats');
             $table->integer('jumlah')->default(1);
             $table->string('kondisi_pinjam')->default('Baik');
-            $table->text('catatan_pinjam')->nullable();
             $table->timestamps();
         });
     }

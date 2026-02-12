@@ -19,8 +19,6 @@ return new class extends Migration
             $table->string('password');
             $table->string('role')->default('Peminjam');
             $table->boolean('is_active')->default(true);
-            $table->timestamp('last_login_at')->nullable();
-            $table->timestamp('last_logout_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

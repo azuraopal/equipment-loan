@@ -23,9 +23,7 @@ return new class extends Migration {
             $table->decimal('total_denda', 15, 2)->default(0);
             $table->string('status_pembayaran')->default('Belum_Lunas');
             $table->date('tanggal_bayar')->nullable();
-            $table->string('bukti_bayar')->nullable();
             $table->text('catatan_pengembalian')->nullable();
-            $table->foreignId('verified_by')->nullable()->constrained('users');
             $table->timestamps();
         });
     }
