@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Services\DendaService;
 use App\Traits\MencatatAktivitas;
 use App\Enums\UserRole;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Notifications\Notification;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -66,8 +68,36 @@ class User extends Authenticatable implements FilamentUser
         };
     }
 
+    public function peminjamans()
+    {
+        return $this->hasMany(Peminjaman::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user) {
+            if ($user->peminjamans()->exists()) {
+                Notification::make()
+                    ->danger()
+                    ->title('Gagal Menghapus')
+                    ->body('Tidak dapat menghapus user karena masih memiliki riwayat peminjaman.')
+                    ->send();
+                return false;
+            }
+
+            if ($user->hasDendaBelumLunas()) {
+                Notification::make()
+                    ->danger()
+                    ->title('Gagal Menghapus')
+                    ->body('Tidak dapat menghapus user karena masih memiliki denda yang belum lunas.')
+                    ->send();
+                return false;
+            }
+        });
+    }
+
     public function hasDendaBelumLunas(): bool
     {
-        return \App\Services\DendaService::cekDendaBelumLunas($this->id);
+        return DendaService::cekDendaBelumLunas($this->id);
     }
 }
