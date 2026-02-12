@@ -51,10 +51,10 @@
 
                 snap.pay('{{ $this->snapToken }}', {
                     onSuccess: function (result) {
-                        window.location.href = "{{ route('filament.peminjam.resources.pengembalian.index') }}";
+                        window.location.reload();
                     },
                     onPending: function (result) {
-                        window.location.href = "{{ route('filament.peminjam.resources.pengembalian.index') }}";
+                        window.location.reload();
                     },
                     onError: function (result) {
                         new FilamentNotification()
