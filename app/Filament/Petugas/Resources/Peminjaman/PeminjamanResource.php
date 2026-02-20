@@ -152,18 +152,9 @@ class PeminjamanResource extends Resource
                                     ->default(now())
                                     ->required()
                                     ->native(false)
-                                    ->live()
-                                    ->helperText('Ubah tanggal untuk menghitung ulang denda.')
-                                    ->afterStateUpdated(function (Set $set, Get $get, Peminjaman $record) {
-                                        $tanggal = $get('tanggal_kembali_real');
-                                        if ($tanggal) {
-                                            $hari = DendaService::hitungHariTerlambat($record, Carbon::parse($tanggal));
-                                            $denda = DendaService::hitungDendaTelat($record, Carbon::parse($tanggal));
-                                            $set('hari_terlambat', $hari);
-                                            $set('denda_keterlambatan', $denda);
-                                            self::hitungGrandTotal($set, $get);
-                                        }
-                                    }),
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->helperText('Otomatis hari ini'),
 
                                 TextInput::make('hari_terlambat')
                                     ->label('Hari Terlambat')
@@ -177,10 +168,11 @@ class PeminjamanResource extends Resource
                                 TextInput::make('denda_keterlambatan')
                                     ->label('Denda Keterlambatan')
                                     ->prefix('Rp')
-                                    ->numeric()
                                     ->default(fn(Peminjaman $record) => DendaService::hitungDendaTelat($record, Carbon::parse(now())))
                                     ->disabled()
                                     ->dehydrated()
+                                    ->formatStateUsing(fn($state) => number_format((float) ($state ?? 0), 0, ',', '.'))
+                                    ->dehydrateStateUsing(fn($state) => (float) str_replace(['.', ','], ['', '.'], $state))
                                     ->helperText('Tarif: Rp5.000/hari'),
                             ]),
 
@@ -225,16 +217,17 @@ class PeminjamanResource extends Resource
                                                 $jumlah = (int) $get('jumlah');
                                                 $kondisi = $get('kondisi_kembali');
                                                 $denda = DendaService::hitungDendaItem($kondisi, $harga, $jumlah);
-                                                $set('denda_item', $denda);
+                                                $set('denda_item', number_format($denda, 0, ',', '.'));
                                             }),
 
                                         TextInput::make('denda_item')
                                             ->label('Denda Item')
                                             ->prefix('Rp')
-                                            ->numeric()
                                             ->default(0)
                                             ->disabled()
-                                            ->dehydrated(),
+                                            ->dehydrated()
+                                            ->formatStateUsing(fn($state) => number_format((float) ($state ?? 0), 0, ',', '.'))
+                                            ->dehydrateStateUsing(fn($state) => (float) str_replace(['.', ','], ['', '.'], $state)),
 
                                         Textarea::make('catatan_kondisi')
                                             ->label('Catatan Kerusakan/Kehilangan')
@@ -268,10 +261,11 @@ class PeminjamanResource extends Resource
                                 TextInput::make('total_denda')
                                     ->label('Total Denda Keseluruhan')
                                     ->prefix('Rp')
-                                    ->numeric()
                                     ->default(fn(Peminjaman $record) => DendaService::hitungDendaTelat($record, Carbon::parse(now())))
                                     ->disabled()
                                     ->dehydrated()
+                                    ->formatStateUsing(fn($state) => number_format((float) ($state ?? 0), 0, ',', '.'))
+                                    ->dehydrateStateUsing(fn($state) => (float) str_replace(['.', ','], ['', '.'], $state))
                                     ->hint('Dihitung otomatis')
                                     ->hintIcon('heroicon-m-calculator')
                                     ->hintColor('success')
@@ -365,11 +359,13 @@ class PeminjamanResource extends Resource
         $totalDendaItem = 0;
         if (is_array($items)) {
             foreach ($items as $item) {
-                $totalDendaItem += (float) ($item['denda_item'] ?? 0);
+                $raw = str_replace(['.', ','], ['', '.'], ($item['denda_item'] ?? '0'));
+                $totalDendaItem += (float) $raw;
             }
         }
-        $dendaTelat = (float) ($get('denda_keterlambatan') ?? 0);
-        $set('total_denda', $totalDendaItem + $dendaTelat);
+        $rawTelat = str_replace(['.', ','], ['', '.'], ($get('denda_keterlambatan') ?? '0'));
+        $dendaTelat = (float) $rawTelat;
+        $set('total_denda', number_format($totalDendaItem + $dendaTelat, 0, ',', '.'));
     }
 
     public static function getPages(): array

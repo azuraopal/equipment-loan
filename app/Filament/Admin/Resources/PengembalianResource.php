@@ -6,7 +6,9 @@ use App\Filament\Admin\Resources\Pengembalian\Pages\CreatePengembalian;
 use App\Filament\Admin\Resources\Pengembalian\Pages\EditPengembalian;
 use App\Filament\Admin\Resources\Pengembalian\Pages\ListPengembalian;
 use App\Models\Pengembalian;
+use App\Services\PaymentService;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -15,6 +17,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
@@ -119,6 +122,7 @@ class PengembalianResource extends Resource
                 TextColumn::make('total_denda')->money('IDR'),
                 TextColumn::make('status_pembayaran')
                     ->badge()
+                    ->formatStateUsing(fn(string $state) => str_replace('_', ' ', $state))
                     ->color(fn(string $state): string => match ($state) {
                         'Lunas' => 'success',
                         default => 'danger',
@@ -126,6 +130,35 @@ class PengembalianResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
+                Action::make('konfirmasi_cash')
+                    ->label('Konfirmasi Cash')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Konfirmasi Pembayaran Cash')
+                    ->modalDescription(fn(Pengembalian $record) => 'Konfirmasi pembayaran cash sebesar Rp ' . number_format((float) $record->total_denda, 0, ',', '.') . ' dari ' . ($record->peminjaman->user->name ?? 'peminjam') . '?')
+                    ->modalSubmitActionLabel('Ya, Konfirmasi Lunas')
+                    ->visible(fn(Pengembalian $record) => $record->payments()
+                        ->where('payment_type', 'cash')
+                        ->where('status', 'pending_verification')
+                        ->exists())
+                    ->action(function (Pengembalian $record) {
+                        $payment = $record->payments()
+                            ->where('payment_type', 'cash')
+                            ->where('status', 'pending_verification')
+                            ->latest()
+                            ->first();
+
+                        if ($payment) {
+                            app(PaymentService::class)->confirmCashPayment($payment);
+
+                            Notification::make()
+                                ->title('Pembayaran cash dikonfirmasi!')
+                                ->body('Status pembayaran telah diubah menjadi Lunas.')
+                                ->success()
+                                ->send();
+                        }
+                    }),
                 ViewAction::make()
                     ->label('View')
                     ->icon('heroicon-o-eye')

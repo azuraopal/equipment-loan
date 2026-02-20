@@ -72,7 +72,8 @@ class PengembalianResource extends Resource
                     ->default(now())
                     ->required()
                     ->native(false)
-                    ->maxDate(now()),
+                    ->disabled()
+                    ->dehydrated(),
 
                 Hidden::make('nomor_pengembalian')
                     ->default(fn() => 'KEM-' . strtoupper(uniqid())),
@@ -94,6 +95,7 @@ class PengembalianResource extends Resource
             'echannel' => 'Mandiri Bill',
             'gopay' => 'GoPay',
             'shopeepay' => 'ShopeePay',
+            'cash' => 'Tunai (Cash)',
             default => strtoupper(str_replace('_', ' ', $type)),
         };
     }
@@ -158,6 +160,7 @@ class PengembalianResource extends Resource
                 TextColumn::make('tanggal_kembali_real')->date(),
                 TextColumn::make('status_pembayaran')
                     ->badge()
+                    ->formatStateUsing(fn(string $state) => str_replace('_', ' ', $state))
                     ->color(fn(string $state): string => match ($state) {
                         'Lunas' => 'success',
                         default => 'warning',
@@ -231,6 +234,7 @@ class PengembalianResource extends Resource
                         TextEntry::make('status_pembayaran')
                             ->label('Status Pembayaran')
                             ->badge()
+                            ->formatStateUsing(fn(string $state) => str_replace('_', ' ', $state))
                             ->color(fn(string $state): string => match ($state) {
                                 'Lunas' => 'success',
                                 default => 'warning',

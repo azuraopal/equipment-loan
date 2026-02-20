@@ -5,11 +5,14 @@ namespace App\Filament\Petugas\Resources\Pengembalian;
 use App\Filament\Petugas\Resources\Pengembalian\Pages\ListPengembalian;
 use App\Models\Payment;
 use App\Models\Pengembalian;
+use App\Services\PaymentService;
 use Auth;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
@@ -59,6 +62,7 @@ class PengembalianResource extends Resource
             'echannel' => 'Mandiri Bill',
             'gopay' => 'GoPay',
             'shopeepay' => 'ShopeePay',
+            'cash' => 'Tunai (Cash)',
             default => strtoupper(str_replace('_', ' ', $type)),
         };
     }
@@ -118,6 +122,7 @@ class PengembalianResource extends Resource
                 TextColumn::make('tanggal_kembali_real')->date()->label('Tgl Kembali'),
                 TextColumn::make('status_pembayaran')
                     ->badge()
+                    ->formatStateUsing(fn(string $state) => str_replace('_', ' ', $state))
                     ->color(fn(string $state): string => match ($state) {
                         'Lunas' => 'success',
                         default => 'danger',
@@ -196,6 +201,7 @@ class PengembalianResource extends Resource
                         TextEntry::make('status_pembayaran')
                             ->label('Status Pembayaran')
                             ->badge()
+                            ->formatStateUsing(fn(string $state) => str_replace('_', ' ', $state))
                             ->color(fn(string $state): string => match ($state) {
                                 'Lunas' => 'success',
                                 default => 'warning',
@@ -263,6 +269,35 @@ class PengembalianResource extends Resource
                                     ->money('IDR'),
                             ]),
                     ]),
+                Action::make('konfirmasi_cash')
+                    ->label('Konfirmasi Cash')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Konfirmasi Pembayaran Cash')
+                    ->modalDescription(fn(Pengembalian $record) => 'Konfirmasi pembayaran cash sebesar Rp ' . number_format((float) $record->total_denda, 0, ',', '.') . ' dari ' . ($record->peminjaman->user->name ?? 'peminjam') . '?')
+                    ->modalSubmitActionLabel('Ya, Konfirmasi Lunas')
+                    ->visible(fn(Pengembalian $record) => $record->payments()
+                        ->where('payment_type', 'cash')
+                        ->where('status', 'pending_verification')
+                        ->exists())
+                    ->action(function (Pengembalian $record) {
+                        $payment = $record->payments()
+                            ->where('payment_type', 'cash')
+                            ->where('status', 'pending_verification')
+                            ->latest()
+                            ->first();
+
+                        if ($payment) {
+                            app(PaymentService::class)->confirmCashPayment($payment);
+
+                            Notification::make()
+                                ->title('Pembayaran cash dikonfirmasi!')
+                                ->body('Status pembayaran telah diubah menjadi Lunas.')
+                                ->success()
+                                ->send();
+                        }
+                    }),
             ]);
     }
 
