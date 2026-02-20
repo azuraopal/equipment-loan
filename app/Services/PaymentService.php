@@ -87,4 +87,40 @@ class PaymentService
             throw new \Exception('Gagal membuat pembayaran: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Create a cash payment record (pending verification by petugas/admin).
+     */
+    public function createCashPayment(Pengembalian $pengembalian): Payment
+    {
+        // Cancel any existing pending midtrans payments
+        $pengembalian->payments()->where('status', 'pending')->update(['status' => 'cancelled']);
+
+        $orderId = 'CASH-' . $pengembalian->id . '-' . time();
+        $amount = $pengembalian->total_denda;
+
+        return Payment::create([
+            'pengembalian_id' => $pengembalian->id,
+            'order_id' => $orderId,
+            'amount' => $amount,
+            'payment_type' => 'cash',
+            'status' => 'pending_verification',
+        ]);
+    }
+
+    /**
+     * Confirm a cash payment (called by petugas/admin).
+     */
+    public function confirmCashPayment(Payment $payment): void
+    {
+        $payment->update([
+            'status' => 'success',
+            'transaction_time' => now(),
+        ]);
+
+        $payment->pengembalian->update([
+            'status_pembayaran' => 'Lunas',
+            'tanggal_bayar' => now(),
+        ]);
+    }
 }
