@@ -43,14 +43,14 @@ class DendaTrenChart extends ChartWidget
             $month = Carbon::now()->subMonths($i);
             $key = $month->format('Y-m');
             $labels[] = $month->translatedFormat('M Y');
-            $lunasValues[] = round(($lunas[$key] ?? 0) / 1000);
-            $belumLunasValues[] = round(($belumLunas[$key] ?? 0) / 1000);
+            $lunasValues[] = (int) ($lunas[$key] ?? 0);
+            $belumLunasValues[] = (int) ($belumLunas[$key] ?? 0);
         }
 
         return [
             'datasets' => [
                 [
-                    'label' => 'Lunas (Rp / 1000)',
+                    'label' => 'Lunas (Rp)',
                     'data' => $lunasValues,
                     'borderColor' => '#22c55e',
                     'backgroundColor' => 'rgba(34, 197, 94, 0.1)',
@@ -58,7 +58,7 @@ class DendaTrenChart extends ChartWidget
                     'tension' => 0.4,
                 ],
                 [
-                    'label' => 'Belum Lunas (Rp / 1000)',
+                    'label' => 'Belum Lunas (Rp)',
                     'data' => $belumLunasValues,
                     'borderColor' => '#ef4444',
                     'backgroundColor' => 'rgba(239, 68, 68, 0.1)',
@@ -74,6 +74,7 @@ class DendaTrenChart extends ChartWidget
     {
         return 'line';
     }
+
     protected function getOptions(): array
     {
         return [

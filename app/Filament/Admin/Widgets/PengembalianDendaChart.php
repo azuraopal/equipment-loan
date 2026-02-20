@@ -49,8 +49,8 @@ class PengembalianDendaChart extends ChartWidget
                     'borderWidth' => 1,
                 ],
                 [
-                    'label' => 'Total Denda (Rp / 1000)',
-                    'data' => array_map(fn($v) => round($v / 1000), $dendaValues),
+                    'label' => 'Total Denda (Rp)',
+                    'data' => $dendaValues,
                     'backgroundColor' => 'rgba(239, 68, 68, 0.7)',
                     'borderColor' => '#ef4444',
                     'borderWidth' => 1,
@@ -64,6 +64,7 @@ class PengembalianDendaChart extends ChartWidget
     {
         return 'bar';
     }
+
     protected function getOptions(): array
     {
         return [
