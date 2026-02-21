@@ -93,7 +93,6 @@ class PaymentService
      */
     public function createCashPayment(Pengembalian $pengembalian): Payment
     {
-        // Cancel any existing pending midtrans payments
         $pengembalian->payments()->where('status', 'pending')->update(['status' => 'cancelled']);
 
         $orderId = 'CASH-' . $pengembalian->id . '-' . time();

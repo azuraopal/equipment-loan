@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Admin\Resources; 
+namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\LogAktivitas\Pages\ManageLogAktivitas;
 
@@ -26,11 +26,6 @@ class LogAktivitasResource extends Resource
     protected static ?string $pluralModelLabel = 'Log Aktivitas';
 
     protected static string|UnitEnum|null $navigationGroup = 'Sistem';
-
-    // public static function canCreate(): bool
-    // {
-    //     return false;
-    // }
 
     public static function canEdit(Model $record): bool
     {

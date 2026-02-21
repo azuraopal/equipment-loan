@@ -7,6 +7,7 @@ use App\Filament\Peminjam\Resources\Pengembalian\Pages\ListPengembalian;
 use App\Models\Payment;
 use App\Models\Peminjaman;
 use App\Models\Pengembalian;
+use App\Services\PaymentReceiptService;
 use Auth;
 use Carbon\Carbon;
 use Filament\Actions\ViewAction;
@@ -168,6 +169,16 @@ class PengembalianResource extends Resource
                 TextColumn::make('total_denda')->money('IDR'),
             ])
             ->actions([
+                Action::make('lihatStruk')
+                    ->label('Struk')
+                    ->icon('heroicon-o-receipt-percent')
+                    ->color('info')
+                    ->modalHeading(fn(Pengembalian $record) => 'Struk: ' . $record->nomor_pengembalian)
+                    ->modalContent(fn(Pengembalian $record) => PaymentReceiptService::renderReceipt($record))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup')
+                    ->modalWidth('lg')
+                    ->visible(fn(Pengembalian $record) => $record->status_pembayaran === 'Lunas'),
                 ViewAction::make()
                     ->modalHeading('Detail Pengembalian')
                     ->modalWidth('3xl')

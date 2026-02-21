@@ -7,6 +7,7 @@ use App\Filament\Admin\Resources\Pengembalian\Pages\EditPengembalian;
 use App\Filament\Admin\Resources\Pengembalian\Pages\ListPengembalian;
 use App\Models\Pengembalian;
 use App\Services\PaymentService;
+use App\Services\PaymentReceiptService;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -82,7 +83,7 @@ class PengembalianResource extends Resource
                                     ->relationship('alat', 'nama_alat')
                                     ->required()
                                     ->searchable()
-                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems(), // Mencegah duplikasi alat
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                                 TextInput::make('jumlah_kembali')
                                     ->numeric()
                                     ->required()
@@ -159,6 +160,16 @@ class PengembalianResource extends Resource
                                 ->send();
                         }
                     }),
+                Action::make('lihatStruk')
+                    ->label('Struk')
+                    ->icon('heroicon-o-receipt-percent')
+                    ->color('info')
+                    ->modalHeading(fn(Pengembalian $record) => 'Struk: ' . $record->nomor_pengembalian)
+                    ->modalContent(fn(Pengembalian $record) => PaymentReceiptService::renderReceipt($record))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup')
+                    ->modalWidth('lg')
+                    ->visible(fn(Pengembalian $record) => $record->status_pembayaran === 'Lunas'),
                 ViewAction::make()
                     ->label('View')
                     ->icon('heroicon-o-eye')

@@ -11,6 +11,7 @@ use App\Enums\PeminjamanStatus;
 use App\Models\Pengembalian;
 use App\Models\PengembalianDetail;
 use App\Services\DendaService;
+use App\Services\QrCodeService;
 use Carbon\Carbon;
 use Exception;
 use Filament\Actions\DeleteAction;
@@ -443,6 +444,37 @@ class PeminjamanResource extends Resource
                             ->success()
                             ->send();
                     }),
+                Action::make('buktiDigital')
+                    ->label('Bukti Digital')
+                    ->icon('heroicon-o-qr-code')
+                    ->color('success')
+                    ->visible(fn(Peminjaman $r) => in_array($r->status, [
+                        PeminjamanStatus::Disetujui,
+                        PeminjamanStatus::Kembali,
+                        PeminjamanStatus::Menunggu_Verifikasi_Kembali,
+                    ]))
+                    ->modalHeading(fn(Peminjaman $record) => 'Bukti Digital: ' . $record->nomor_peminjaman)
+                    ->modalDescription('Scan QR ini untuk verifikasi peminjaman')
+                    ->modalContent(function (Peminjaman $record) {
+                        $url = url("/peminjaman/info/{$record->nomor_peminjaman}");
+                        $qrCode = QrCodeService::generateSvg($url, 250);
+
+                        $html = '<div style="text-align:center; padding:20px;">';
+                        $html .= '<div style="display:inline-block; padding:24px; background:#fff; border-radius:16px; margin-bottom:16px;">';
+                        $html .= $qrCode;
+                        $html .= '</div>';
+                        $html .= '<div style="margin-top:12px;">';
+                        $html .= '<p style="font-size:18px; font-weight:700; margin-bottom:4px;">' . e($record->nomor_peminjaman) . '</p>';
+                        $html .= '<p style="font-size:13px; color:#64748b; margin-bottom:4px;">Peminjam: ' . e($record->user->name) . '</p>';
+                        $html .= '<p style="font-size:13px; color:#64748b; margin-bottom:16px;">Status: ' . $record->status->getLabel() . '</p>';
+                        $html .= '<a href="' . $url . '" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding:8px 20px; background:linear-gradient(135deg,#059669,#10b981); color:#fff; border-radius:12px; text-decoration:none; font-size:13px; font-weight:600;">';
+                        $html .= '🔗 Buka Bukti Digital</a>';
+                        $html .= '</div></div>';
+
+                        return new HtmlString($html);
+                    })
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup'),
                 ViewAction::make()
                     ->label('View')
                     ->icon('heroicon-o-eye')
