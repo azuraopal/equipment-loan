@@ -88,9 +88,6 @@ class PaymentService
         }
     }
 
-    /**
-     * Create a cash payment record (pending verification by petugas/admin).
-     */
     public function createCashPayment(Pengembalian $pengembalian): Payment
     {
         $pengembalian->payments()->where('status', 'pending')->update(['status' => 'cancelled']);
@@ -107,9 +104,6 @@ class PaymentService
         ]);
     }
 
-    /**
-     * Confirm a cash payment (called by petugas/admin).
-     */
     public function confirmCashPayment(Payment $payment): void
     {
         $payment->update([

@@ -11,9 +11,6 @@ use Midtrans\Transaction;
 
 class PaymentReceiptService
 {
-    /**
-     * Get the latest successful payment for a pengembalian, fetching details from Midtrans if needed.
-     */
     public static function getPayment(Pengembalian $record): ?Payment
     {
         /** @var Payment|null $payment */
@@ -55,9 +52,6 @@ class PaymentReceiptService
         return $payment;
     }
 
-    /**
-     * Format payment type to human-readable string.
-     */
     public static function formatPaymentType(?string $type): string
     {
         if (!$type)
@@ -76,9 +70,6 @@ class PaymentReceiptService
         };
     }
 
-    /**
-     * Render a styled payment receipt (struk) as HTML.
-     */
     public static function renderReceipt(Pengembalian $record): HtmlString
     {
         $record->load('peminjaman.user', 'petugas', 'details.alat');

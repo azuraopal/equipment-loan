@@ -5,8 +5,6 @@ namespace App\Services;
 class QrCodeService
 {
     /**
-     * Generate QR Code SVG string.
-     *
      * @param string $data The data to encode in the QR code
      * @param int $size The size of the QR code in pixels
      * @return string SVG string
