@@ -1,10 +1,15 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Http\Controllers\AlatInfoController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\PaymentController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+
+// Public QR Info Pages (no auth required)
+Route::get('/alat/info/{kode_alat}', [AlatInfoController::class, 'alat'])->name('alat.info');
+Route::get('/peminjaman/info/{nomor}', [AlatInfoController::class, 'peminjaman'])->name('peminjaman.info');
 
 Route::get('/', function () {
     if (Auth::check()) {
