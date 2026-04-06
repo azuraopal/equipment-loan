@@ -42,11 +42,13 @@ class PeminjamanResource extends Resource
                             ->default(now())
                             ->required()
                             ->native(false)
-                            ->minDate(now()->startOfDay()),
+                            ->minDate(now()->startOfDay())
+                            ->live(),
                         DatePicker::make('tanggal_kembali_rencana')
                             ->label('Rencana Kembali')
                             ->required()
                             ->native(false)
+                            ->minDate(fn ($get) => $get('tanggal_pinjam') ?: now()->startOfDay())
                             ->after('tanggal_pinjam'),
                         Textarea::make('keperluan')
                             ->required(),
