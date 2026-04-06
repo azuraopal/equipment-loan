@@ -46,7 +46,7 @@ class PembayaranDenda extends Page implements HasForms, HasActions
 
     public function getSubheading(): ?string
     {
-        return 'Selesaikan pembayaran denda pengembalian terlambat';
+        return 'Halaman pembayaran denda atas keterlambatan pengembalian alat';
     }
 
     public $recordId;
@@ -89,19 +89,19 @@ class PembayaranDenda extends Page implements HasForms, HasActions
     public function bayarCashAction(): Action
     {
         return Action::make('bayarCash')
-            ->label('Bayar Cash (Tunai)')
+            ->label('Bayar Tunai (Cash)')
             ->icon('heroicon-o-banknotes')
             ->color('warning')
             ->requiresConfirmation()
-            ->modalHeading('Konfirmasi Pembayaran Cash')
-            ->modalDescription('Pembayaran cash akan menunggu verifikasi dari petugas/admin. Pastikan Anda membayar langsung ke petugas.')
-            ->modalSubmitActionLabel('Ya, Bayar Cash')
+            ->modalHeading('Konfirmasi Pembayaran Tunai')
+            ->modalDescription('Pembayaran tunai memerlukan verifikasi dari petugas atau admin. Pastikan Anda melakukan pembayaran secara langsung kepada petugas yang bertugas.')
+            ->modalSubmitActionLabel('Konfirmasi Pembayaran Tunai')
             ->action(function () {
                 app(PaymentService::class)->createCashPayment($this->record);
 
                 Notification::make()
-                    ->title('Pembayaran cash berhasil diajukan!')
-                    ->body('Silakan bayar ke petugas. Status akan diperbarui setelah petugas mengkonfirmasi.')
+                    ->title('Pengajuan pembayaran tunai berhasil')
+                    ->body('Silakan lakukan pembayaran kepada petugas. Status pembayaran akan diperbarui setelah petugas melakukan verifikasi.')
                     ->success()
                     ->send();
 
@@ -123,8 +123,8 @@ class PembayaranDenda extends Page implements HasForms, HasActions
 
         return $schema
             ->schema([
-                Section::make('Informasi Pengembalian')
-                    ->description('Detail pengembalian yang dikenakan denda')
+                Section::make('Detail Pengembalian')
+                    ->description('Informasi lengkap terkait pengembalian yang dikenakan denda')
                     ->icon('heroicon-o-document-text')
                     ->schema([
                         Grid::make(2)
@@ -158,8 +158,8 @@ class PembayaranDenda extends Page implements HasForms, HasActions
                     ])
                     ->collapsible(),
 
-                Section::make('Rincian Denda')
-                    ->description('Rincian biaya denda yang harus dibayar')
+                Section::make('Rincian Biaya Denda')
+                    ->description('Perincian komponen biaya denda yang harus diselesaikan')
                     ->icon('heroicon-o-calculator')
                     ->schema([
                         Grid::make(3)
@@ -183,17 +183,17 @@ class PembayaranDenda extends Page implements HasForms, HasActions
                             ->extraAttributes(['class' => 'text-2xl font-bold text-danger-600 dark:text-danger-400']),
                     ]),
 
-                Section::make('Pembayaran')
+                Section::make('Metode Pembayaran')
                     ->description($hasPendingCash
-                        ? 'Pembayaran cash menunggu verifikasi petugas'
-                        : 'Pilih metode pembayaran untuk menyelesaikan denda')
+                        ? 'Pembayaran tunai Anda sedang dalam proses verifikasi oleh petugas'
+                        : 'Pilih metode pembayaran yang sesuai untuk menyelesaikan denda')
                     ->icon('heroicon-o-credit-card')
                     ->schema(array_filter([
                         $hasPendingCash
                         ? Placeholder::make('cash_status')
                             ->label('Status')
                             ->content(new HtmlString(
-                                '<span class="fi-badge flex items-center justify-center gap-x-1 rounded-md text-xs font-medium ring-1 ring-inset px-2 min-w-[theme(spacing.6)] py-1 fi-color-custom fi-color-warning bg-custom-50 text-custom-600 ring-custom-600/10 dark:bg-custom-400/10 dark:text-custom-400 dark:ring-custom-400/30" style="--c-50:var(--warning-50);--c-400:var(--warning-400);--c-600:var(--warning-600);">⏳ Menunggu Verifikasi Cash</span>'
+                                '<span class="fi-badge flex items-center justify-center gap-x-1 rounded-md text-xs font-medium ring-1 ring-inset px-2 min-w-[theme(spacing.6)] py-1 fi-color-custom fi-color-warning bg-custom-50 text-custom-600 ring-custom-600/10 dark:bg-custom-400/10 dark:text-custom-400 dark:ring-custom-400/30" style="--c-50:var(--warning-50);--c-400:var(--warning-400);--c-600:var(--warning-600);">⏳ Menunggu Verifikasi Petugas</span>'
                             ))
                         : null,
 

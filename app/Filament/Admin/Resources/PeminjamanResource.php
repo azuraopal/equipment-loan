@@ -84,12 +84,14 @@ class PeminjamanResource extends Resource
                             ->default(now())
                             ->required()
                             ->native(false)
-                            ->prefixIcon('heroicon-m-calendar'),
+                            ->prefixIcon('heroicon-m-calendar')
+                            ->live(),
 
                         DatePicker::make('tanggal_kembali_rencana')
                             ->label('Rencana Kembali')
                             ->required()
                             ->native(false)
+                            ->minDate(fn ($get) => $get('tanggal_pinjam') ?: now()->startOfDay())
                             ->after('tanggal_pinjam')
                             ->prefixIcon('heroicon-m-calendar-days'),
 
