@@ -29,6 +29,7 @@ class PeminjamPanelProvider extends PanelProvider
         return $panel
             ->id('peminjam')
             ->path('peminjam')
+            ->brandName('EquipLoan')
             ->authGuard('web')
             ->databaseNotifications()
             ->colors([

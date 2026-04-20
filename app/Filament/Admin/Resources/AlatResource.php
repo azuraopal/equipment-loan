@@ -90,7 +90,8 @@ class AlatResource extends Resource
     {
         return $table
             ->columns([
-                ImageColumn::make('gambar'),
+                ImageColumn::make('gambar')
+                    ->disk('public'),
                 TextColumn::make('nama_alat')->searchable(),
                 TextColumn::make('kode_alat')->searchable(),
                 TextColumn::make('kategori.nama_kategori')->badge(),
