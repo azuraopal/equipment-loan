@@ -64,7 +64,6 @@ class AlatResource extends Resource
                     ->options([
                         'Baik' => 'Baik',
                         'Rusak' => 'Rusak',
-                        'Hilang' => 'Hilang',
                     ])
                     ->native(false)
                     ->searchable()
@@ -79,7 +78,9 @@ class AlatResource extends Resource
                     ->directory('alat-gambar')
                     ->visibility('public')
                     ->image()
-                    ->imagePreviewHeight('300')
+                    ->imageEditor()
+                    ->maxSize(2048) 
+                    ->imagePreviewHeight('250')
                     ->columnSpanFull()
                     ->required(),
             ]);
