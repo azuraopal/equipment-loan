@@ -19,6 +19,8 @@ class ScanQrPage extends Page
 
     protected static ?int $navigationSort = 0;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected string $view = 'filament.petugas.pages.scan-qr';
 
     public ?string $scanResult = null;

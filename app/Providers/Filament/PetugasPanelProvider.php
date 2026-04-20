@@ -6,6 +6,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -36,6 +37,15 @@ class PetugasPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Petugas/Pages'), for: 'App\Filament\Petugas\Pages')
             ->pages([
                 Dashboard::class,
+            ])
+            ->navigationItems([
+                NavigationItem::make('Scan QR Code')
+                    ->icon('heroicon-o-qr-code')
+                    ->url('#')
+                    ->extraAttributes([
+                        'onclick' => "new FilamentNotification().title('Fitur Coming Soon').body('Fitur Scan QR Code sedang dalam tahap pengembangan.').info().send(); return false;",
+                    ])
+                    ->sort(0),
             ])
             ->discoverWidgets(in: app_path('Filament/Petugas/Widgets'), for: 'App\Filament\Petugas\Widgets')
             ->widgets([])
